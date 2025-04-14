@@ -45,6 +45,7 @@ cuda-version = "<=12.4"
 glfw = "*"
 pip = ">=25.0.1,<26"
 pyrealsense2 = ">=2.54.2,<3"
+pytest = ">=8.3.5,<9"
 
 [tool.pixi.pypi-dependencies]
 embodied_gaussians = { path = ".", editable = true }
