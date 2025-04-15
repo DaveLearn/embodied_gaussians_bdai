@@ -135,7 +135,7 @@ void reduce_vec3_impl(
 };
 
 
-PYBIND11_MODULE(pysegreduce, m) {
+PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
     //m.def("reduce_float", &reduce_impl<float>, "reduce float", py::call_guard<py::gil_scoped_release>());
     m.def("reduce_vec3f", &reduce_vec3_impl, py::call_guard<py::gil_scoped_release>());
     m.def("reduce_mat33f", &reduce_mat33_impl, py::call_guard<py::gil_scoped_release>());

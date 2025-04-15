@@ -50,12 +50,12 @@ pyrealsense2 = ">=2.54.2,<3"
 
 [tool.pixi.pypi-dependencies]
 embodied_gaussians = { path = ".", editable = true }
-pysegreduce = { path = "dependencies/segreduce", editable = true }
 
 
 [tool.pixi.tasks]
 build_gsplat = "pip install git+https://github.com/nerfstudio-project/gsplat.git"
-build = {depends-on=["build_gsplat"]}
+build_pysegreduce = "pip install ./dependencies/segreduce --no-build-isolation"
+build = {depends-on=["build_gsplat", "build_pysegreduce"]}
 demo = "python examples/example_embodied_pusht_offline.py"
 
 [tool.pixi.activation]
