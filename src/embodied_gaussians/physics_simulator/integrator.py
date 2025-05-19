@@ -2,7 +2,9 @@
 
 from typing_extensions import override
 import warp as wp
+import warp.types as wpt
 import warp.sim
+from typing import Tuple
 
 
 @wp.func
@@ -17,7 +19,7 @@ def integrate_rigid_body(
     gravity: wp.vec3,
     angular_damping: float,
     dt: float,
-):
+) -> Tuple[wp.transform, wpt.spatial_vector]:
     # unpack transform
     x0 = wp.transform_get_translation(q)
     r0 = wp.transform_get_rotation(q)
@@ -70,7 +72,7 @@ def integrate_bodies(
     # outputs
     body_q_new: wp.array(dtype=wp.transform),
     body_qd_new: wp.array(dtype=wp.spatial_vector),
-):
+) -> None:
     tid = wp.tid()
 
     # positions
@@ -116,7 +118,7 @@ class XPBDIntegrator(warp.sim.XPBDIntegrator):
         state_out: warp.sim.State,
         dt: float,
         angular_damping: float = 0.0,
-    ):
+    ) -> None:
         """
         Integrate the rigid bodies of the model.
 

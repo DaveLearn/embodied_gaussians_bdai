@@ -2,10 +2,11 @@
 
 import open3d as o3d
 import numpy as np
+from typing import List, Union, Any
 from scipy.spatial.transform import Rotation as R
 from embodied_gaussians.scene_builders.domain import Body, Gaussians
 
-def visualize(body: Body):
+def visualize(body: Body) -> None:
     o3d.visualization.draw_geometries(
         [
             o3d.geometry.TriangleMesh.create_coordinate_frame(0.1),
@@ -14,7 +15,7 @@ def visualize(body: Body):
         ]
     )
 
-def ellipsoid_meshes(gaussians: Gaussians):
+def ellipsoid_meshes(gaussians: Gaussians) -> List[o3d.geometry.TriangleMesh]:
     ellipsoid_meshes = []
     for i, mean in enumerate(gaussians.means):
         ellipsoid: o3d.geometry.TriangleMesh = o3d.geometry.TriangleMesh.create_sphere(radius=1.0)
@@ -35,7 +36,11 @@ def ellipsoid_meshes(gaussians: Gaussians):
     return ellipsoid_meshes
 
 
-def sphere_meshes(means, radius, colors: np.ndarray | None = None):
+def sphere_meshes(
+    means: List[List[float]], 
+    radius: float, 
+    colors: np.ndarray | None = None
+) -> List[o3d.geometry.TriangleMesh]:
     sphere_meshes = []
     for i, mean in enumerate(means):
         sphere: o3d.geometry.TriangleMesh = o3d.geometry.TriangleMesh.create_sphere(radius=radius)

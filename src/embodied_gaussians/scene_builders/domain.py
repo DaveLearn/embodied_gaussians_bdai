@@ -1,7 +1,7 @@
 # Copyright (c) 2025 Boston Dynamics AI Institute LLC. All rights reserved.
 
 from pathlib import Path
-from typing import Literal
+from typing import Literal, List, Tuple, Union, Callable
 import numpy as np
 import torch
 from pydantic import BaseModel
@@ -48,13 +48,13 @@ class PosedImageAndDepth(Posed, Image, Depth):
 class MaskedPosedImageAndDepth(Masked, Posed, Image, Depth):
     pass
 
-def save_posed_images(path: Path, posed_images):
+def save_posed_images(path: Path, posed_images: List[PosedImage]) -> None:
     path = Path(path)
     assert path.suffix == ".npz" 
     path.parent.mkdir(parents=True, exist_ok=True)
     np.savez_compressed(path, posed_images, allow_pickle=True)
 
-def load_posed_images(path: Path):
+def load_posed_images(path: Path) -> np.ndarray:
     path = Path(path)
     return np.load(path, allow_pickle=True)["arr_0"]
 
@@ -70,7 +70,7 @@ class Ground(BaseModel):
     plane: tuple[float, float, float, float] =  (0.0, 0.0, 1.0, 0.0) # (4,) ax + by + cz + d = 0
 
     def normal(self) -> np.ndarray:
-        return self.plane[:3]
+        return np.array(self.plane[:3])
     
     def offset(self) -> float:
         return -self.plane[3]
@@ -82,10 +82,10 @@ class Gaussians(BaseModel):
     opacities: list[float]# (n_gaussians,)
     colors: list[list[float]]# (n_gaussians, 3)
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self.means)
     
-    def mask(self, mask: np.ndarray):
+    def mask(self, mask: np.ndarray) -> 'Gaussians':
         return Gaussians(
             means=np.asarray(self.means)[mask].tolist(),
             quats=np.asarray(self.quats)[mask].tolist(),
@@ -100,10 +100,10 @@ class Particles(BaseModel):
     radii: list[float]# (n_gaussians,)
     colors: list[list[float]]# (n_gaussians, 3)
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self.means)
     
-    def mask(self, mask: np.ndarray):
+    def mask(self, mask: np.ndarray) -> 'Particles':
         return Particles(
             means=np.asarray(self.means)[mask].tolist(),
             quats=np.asarray(self.quats)[mask].tolist(),

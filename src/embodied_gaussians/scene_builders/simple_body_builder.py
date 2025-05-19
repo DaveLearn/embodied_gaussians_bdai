@@ -3,6 +3,7 @@
 from dataclasses import dataclass, field
 from collections import namedtuple
 import logging
+from typing import Optional, List, Dict, Tuple, Any
 
 import numpy as np
 import open3d as o3d
@@ -30,7 +31,10 @@ from .simple_visualizer import ellipsoid_meshes, sphere_meshes
 
 logger = logging.getLogger(__name__)
 
-
+GroundTruth = namedtuple(
+        "GroundTruth",
+        ["images", "depths", "X_CWs", "Ks", "depth_masks", "masks", "width", "height"],
+    )
 
 @dataclass
 class SimpleBodyBuilderSettings:
@@ -64,9 +68,9 @@ class SimpleBodyBuilder:
     def build(
         name: str,
         settings: SimpleBodyBuilderSettings,
-        datapoints: list[MaskedPosedImageAndDepth],
+        datapoints: List[MaskedPosedImageAndDepth],
         visualize: bool = False,
-    ) -> Body:
+    ) -> Optional[Body]:
         wp.init()
 
         # Reference: Physically Embodied Gaussian Splatting
@@ -206,10 +210,10 @@ class SimpleBodyBuilder:
 
     @staticmethod
     def _merge_into_pointcloud(
-        datapoints: list[MaskedPosedImageAndDepth], 
+        datapoints: List[MaskedPosedImageAndDepth], 
         max_depth: float
-    ) -> o3d.geometry.PointCloud | None:
-        all_pointclouds = []
+    ) -> Optional[o3d.geometry.PointCloud]:
+        all_pointclouds: List[o3d.geometry.PointCloud] = []
         for datapoint in datapoints:
 
             if datapoint.mask is not None:
@@ -284,8 +288,8 @@ class SimpleBodyBuilder:
 
     @staticmethod
     def _prune_points_not_in_masks(
-        points: np.ndarray, datapoints: list[MaskedPosedImageAndDepth]
-    ):
+        points: np.ndarray, datapoints: List[MaskedPosedImageAndDepth]
+    ) -> np.ndarray:
         assert points.shape[1] == 3
 
         final_mask = np.zeros((points.shape[0],), dtype=bool)
@@ -324,7 +328,7 @@ class SimpleBodyBuilder:
         learning_rates: GaussianLearningRates,
         ground: Ground,
         opacity_threshold: float,
-        datapoints: list[MaskedPosedImageAndDepth],
+        datapoints: List[MaskedPosedImageAndDepth],
         max_depth: float,
         cohesion_distance: float = 0.001,
         visualize: bool = False,
@@ -423,12 +427,12 @@ class SimpleBodyBuilder:
         radius: float,
         num_iterations: int,
         learning_rates: GaussianLearningRates,
-        datapoints: list[MaskedPosedImageAndDepth],
+        datapoints: List[MaskedPosedImageAndDepth],
         min_scale: float,
         max_scale: float,
         max_depth: float,
         visualize: bool = False,
-    ):
+    ) -> Gaussians:
 
         assert initial_points.shape[1] == 3
         params = SimpleBodyBuilder._create_initial_gaussian_state(
@@ -500,7 +504,7 @@ class SimpleBodyBuilder:
         )
     
     @staticmethod
-    def _convert_to_body_frame(gaussians: Gaussians, particles: Particles):
+    def _convert_to_body_frame(gaussians: Gaussians, particles: Particles) -> np.ndarray:
         pc = o3d.geometry.PointCloud()
         pc.points = o3d.utility.Vector3dVector(particles.means)
         obb: o3d.geometry.OrientedBoundingBox = pc.get_minimal_oriented_bounding_box()
@@ -526,7 +530,7 @@ class SimpleBodyBuilder:
     @staticmethod
     def _project_points(
         points: np.ndarray, K: np.ndarray, X_WC: np.ndarray, width: int, height: int
-    ) -> tuple[np.ndarray, np.ndarray]:
+    ) -> Tuple[np.ndarray, np.ndarray]:
         """
         points: (n, 3)
         X_WC expected in blender standard
@@ -586,7 +590,7 @@ class SimpleBodyBuilder:
 
 
     @staticmethod
-    def _get_rasterization_groundtruth(datapoints: list[MaskedPosedImageAndDepth], max_depth: float):
+    def _get_rasterization_groundtruth(datapoints: List[MaskedPosedImageAndDepth], max_depth: float):
         X_CWs = []
         Ks = []
         gts = []
@@ -633,10 +637,7 @@ class SimpleBodyBuilder:
         Ks = torch.stack(Ks)
         masks = torch.stack(masks)
 
-        return namedtuple(
-            "GroundTruth",
-            ["images", "depths", "X_CWs", "Ks", "depth_masks", "masks", "width", "height"],
-        )(gts, depth_gts, X_CWs, Ks, depth_masks, masks, width, height)
+        return GroundTruth(gts, depth_gts, X_CWs, Ks, depth_masks, masks, width, height)
 
     @staticmethod
     def _create_initial_gaussian_state(means_: np.ndarray, radius: float):
@@ -698,7 +699,7 @@ def solve_particle_particle_collisions(
     k_cohesion: float,
     # outputs
     deltas: wp.array(dtype=wp.vec3),  # type: ignore
-):
+) -> None:
     tid = wp.tid()
 
     # order threads by cell

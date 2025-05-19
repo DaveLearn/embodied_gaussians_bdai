@@ -1,6 +1,7 @@
 # Copyright (c) 2025 Boston Dynamics AI Institute LLC. All rights reserved.
 
 from dataclasses import dataclass
+from typing import Optional
 
 import numpy as np
 import torch
@@ -32,7 +33,7 @@ class PhysicsSettings:
 class Simulator:
     def __init__(
         self, builder: ModelBuilder, device: str = "cuda", requires_grad: bool = False
-    ):
+    ) -> None:
         self.builder = builder
         self.device = device
         self.model = builder.finalize(device, requires_grad)
@@ -43,34 +44,34 @@ class Simulator:
         self.sim_time = 0.0
         self.eval_fk()
 
-    def clone_control(self):
+    def clone_control(self) -> warp.sim.Control:
         return clone_control(self.control)
 
-    def clone_state(self):
+    def clone_state(self) -> warp.sim.State:
         return clone_state(self.state_0)
 
-    def set_state(self, state: warp.sim.State):
+    def set_state(self, state: warp.sim.State) -> None:
         copy_state(self.state_0, state)
 
-    def set_control(self, control: warp.sim.Control):
+    def set_control(self, control: warp.sim.Control) -> None:
         copy_control(self.control, control)
 
-    def synchronize_state(self, state: warp.sim.State):
+    def synchronize_state(self, state: warp.sim.State) -> None:
         synchronize_state(
             dst_state=self.state_0,
             src_state=state,
         )
 
-    def synchronize_control(self, control: warp.sim.Control):
+    def synchronize_control(self, control: warp.sim.Control) -> None:
         synchronize_control(dst_control=self.control, src_control=control)
 
-    def reset(self):
+    def reset(self) -> None:
         self.sim_time = 0.0
 
-    def get_time(self):
+    def get_time(self) -> float:
         return self.sim_time
 
-    def eval_fk(self, mask=None):
+    def eval_fk(self, mask: Optional[torch.Tensor] = None) -> None:
         if self.model.joint_count > 0:
             warp.sim.eval_fk(
                 self.model,
@@ -79,41 +80,40 @@ class Simulator:
                 mask,
                 self.state_0,
             )
-            # wp.copy(self.control.joint_act, self.model.joint_q)  # type: ignore
 
-    def eval_ik(self):
+    def eval_ik(self) -> None:
         if self.model.joint_count > 0:
             warp.sim.eval_ik(
                 self.model, self.state_0, self.state_0.joint_q, self.state_0.joint_qd
             )
 
-    def set_body_q(self, body_id: int, X_WO: np.ndarray):
+    def set_body_q(self, body_id: int, X_WO: np.ndarray) -> None:
         s = wp.to_torch(self.state_0.body_q)
         T = transform_from_matrix(X_WO)
         s[body_id] = torch.from_numpy(T).float().to(self.device)
 
-    def get_body_q(self, body_id: int):
+    def get_body_q(self, body_id: int) -> np.ndarray:
         s = wp.to_torch(self.state_0.body_q)[body_id].cpu().numpy()
         return transform_to_matrix(s)
 
-    def get_articulation_q(self, index: int, num_joints: int):
+    def get_articulation_q(self, index: int, num_joints: int) -> torch.Tensor:
         assert index < self.builder.articulation_count
         joint_start = self.builder.articulation_start[index]
         joint_q = wp.to_torch(self.state_0.joint_q)
         return joint_q[joint_start : joint_start + num_joints]
     
-    def get_articulation_qd(self, index: int, num_joints: int):
+    def get_articulation_qd(self, index: int, num_joints: int) -> torch.Tensor:
         assert index < self.builder.articulation_count
         joint_start = self.builder.articulation_start[index]
         joint_qd = wp.to_torch(self.state_0.joint_qd)
         return joint_qd[joint_start : joint_start + num_joints]
     
-    def check_articulation_healthy(self, index: int):
+    def check_articulation_healthy(self, index: int) -> bool:
         assert index < self.builder.articulation_count
         joint_qd = wp.to_torch(self.state_0.joint_qd)
-        return torch.isfinite(joint_qd).all()
+        return bool(torch.isfinite(joint_qd).all())
 
-    def set_articulation_q(self, index: int, q: torch.Tensor):
+    def set_articulation_q(self, index: int, q: torch.Tensor) -> None:
         assert index < self.builder.articulation_count
         if q.ndim == 1:
             q = q.unsqueeze(0) # replicate q for all envs
@@ -130,7 +130,7 @@ class Simulator:
             self.model, self.state_0.joint_q, self.state_0.joint_qd, None, self.state_0
         )
 
-    def set_articulation_control_q(self, index: int, q: torch.Tensor):
+    def set_articulation_control_q(self, index: int, q: torch.Tensor) -> None:
         assert index < self.builder.articulation_count
         if q.ndim == 1:
             q = q.unsqueeze(0) # replicate q for all envs
@@ -143,17 +143,17 @@ class Simulator:
     def get_joint_act(self) -> torch.Tensor:
         return wp.to_torch(self.control.joint_act).reshape((self.num_envs, -1))
 
-    def set_joint_act(self, joint_act: torch.Tensor):
+    def set_joint_act(self, joint_act: torch.Tensor) -> None:
         assert joint_act.shape[0] == self.num_envs
         ja = self.get_joint_act()
         ja.copy_(joint_act)
 
-    def physics_step(self, settings: PhysicsSettings):
+    def physics_step(self, settings: PhysicsSettings) -> None:
         self._physics_step(settings)
         self.sim_time += settings.dt
 
     @cuda_graph_capture
-    def _physics_step(self, settings: PhysicsSettings):
+    def _physics_step(self, settings: PhysicsSettings) -> None:
         self.integrator = XPBDIntegrator(iterations=settings.xpbd_iterations)
         warp.sim.collide(self.model, self.state_0)
         for _ in range(settings.substeps):

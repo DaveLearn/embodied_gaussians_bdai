@@ -1,6 +1,6 @@
 # Copyright (c) 2025 Boston Dynamics AI Institute LLC. All rights reserved.
 
-from typing import Literal
+from typing import Literal, Optional, Tuple, Dict, Any
 import pysegreduce
 from dataclasses import dataclass
 import torch
@@ -34,8 +34,8 @@ class EmbodiedGaussiansSimulator(Simulator):
         self,
         builder: EmbodiedGaussiansBuilder,
         device: str = "cuda",
-        require_grad=False,
-    ):
+        require_grad: bool = False,
+    ) -> None:
         super().__init__(builder, device=device, requires_grad=require_grad)
         self.gaussian_model = builder.gaussian_model
         self.gaussian_state = builder.gaussian_state
@@ -47,7 +47,7 @@ class EmbodiedGaussiansSimulator(Simulator):
         )
         self.appearance_optimizer = AppearanceOptimizer(self.gaussian_state)
 
-    def get_specific_environment_state(self, env_ind: int):
+    def get_specific_environment_state(self, env_ind: int) -> EmbodiedGaussianState:
         with torch.no_grad():
             sim = self
             s = wp.to_torch(sim.state_0).reshape(self.num_envs(), -1, 7)[env_ind]
@@ -59,7 +59,7 @@ class EmbodiedGaussiansSimulator(Simulator):
                 physics_state=s, physics_control=c, gaussian_state=g
             )
     
-    def set_specific_environment_state(self, env_ind: int, state: EmbodiedGaussianState):
+    def set_specific_environment_state(self, env_ind: int, state: EmbodiedGaussianState) -> None:
         sim = self
         with torch.no_grad():
             wp.to_torch(sim.state_0).reshape(self.num_envs(), -1, 7)[env_ind] = wp.to_torch(state.physics_state)
@@ -67,7 +67,7 @@ class EmbodiedGaussiansSimulator(Simulator):
             g = sim.gaussian_state.reshape((self.num_envs(), -1, 7)).slice(env_ind)
             g.copy(state.gaussian_state)
 
-    def embodied_gaussian_state(self):
+    def embodied_gaussian_state(self) -> EmbodiedGaussianState:
         s = self.state_0
         c = self.control
         g = self.gaussian_state.clone()
@@ -75,7 +75,7 @@ class EmbodiedGaussiansSimulator(Simulator):
             physics_state=s, physics_control=c, gaussian_state=g
         )
 
-    def clone_embodied_gaussian_state(self):
+    def clone_embodied_gaussian_state(self) -> EmbodiedGaussianState:
         s = self.clone_state()
         c = self.clone_control()
         g = self.gaussian_state.clone()
@@ -83,7 +83,7 @@ class EmbodiedGaussiansSimulator(Simulator):
             physics_state=s, physics_control=c, gaussian_state=g
         )
 
-    def copy_embodied_gaussian_state(self, state: EmbodiedGaussianState):
+    def copy_embodied_gaussian_state(self, state: EmbodiedGaussianState) -> None:
         self.set_state(state.physics_state)
         self.set_control(state.physics_control)
         self.gaussian_state.copy(state.gaussian_state)
@@ -95,7 +95,7 @@ class EmbodiedGaussiansSimulator(Simulator):
         width: float,
         height: float,
         background: torch.Tensor,
-    ):
+    ) -> Tuple[torch.Tensor, torch.Tensor, Dict[str, Any]]:
         num_images = X_CWs.shape[0]
         with torch.no_grad():
             render_colors, render_alphas, info = rasterization(
@@ -122,11 +122,11 @@ class EmbodiedGaussiansSimulator(Simulator):
         width: float,
         height: float,
         background: torch.Tensor,
-        near_plane=0.01,
-        far_plane=3.0,
+        near_plane: float = 0.01,
+        far_plane: float = 3.0,
         render_mode: Literal["RGB", "D", "ED", "RGB+D", "RGB+ED"] = "RGB",
-        **kwargs,
-    ):
+        **kwargs: Any,
+    ) -> Tuple[torch.Tensor, torch.Tensor, Dict[str, Any]]:
         return render_gaussians(
             gaussian_state,
             X_CWs,
@@ -142,17 +142,17 @@ class EmbodiedGaussiansSimulator(Simulator):
 
     def compute_visual_forces(
         self, settings: VisualForcesSettings, frames: Frames, dt: float
-    ):
+    ) -> None:
         self._compute_visual_forces(settings, frames, dt)
 
-    def update_gaussian_transforms(self):
+    def update_gaussian_transforms(self) -> None:
         update_gaussian_transforms(
             self.gaussian_model, self.state_0.body_q, self.gaussian_state
         )
 
     def _compute_visual_forces(
         self, settings: VisualForcesSettings, frames: Frames, dt: float
-    ):
+    ) -> None:
         with torch.no_grad():
             self.visual_forces.means.copy_(self.gaussian_state.means)
             self.visual_forces.quats.copy_(self.gaussian_state.quats)
@@ -243,11 +243,11 @@ def render_gaussians(
     width: float,
     height: float,
     background: torch.Tensor,
-    near_plane=0.01,
-    far_plane=3.0,
+    near_plane: float = 0.01,
+    far_plane: float = 3.0,
     render_mode: Literal["RGB", "D", "ED", "RGB+D", "RGB+ED"] = "RGB",
-    **kwargs,
-):
+    **kwargs: Any,
+) -> Tuple[torch.Tensor, torch.Tensor, Dict[str, Any]]:
     num_images = X_CWs.shape[0]
     with torch.no_grad():
         render_colors, render_alphas, info = rasterization(
