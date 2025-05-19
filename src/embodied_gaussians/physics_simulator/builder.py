@@ -1,11 +1,15 @@
 # Copyright (c) 2025 Boston Dynamics AI Institute LLC. All rights reserved.
 
+from typing import Protocol, TypeVar, cast
 import numpy as np
 import warp as wp
 import warp.sim
 
 from embodied_gaussians.utils.physics_utils import transform_from_matrix, save_builder, load_builder
 
+
+class EmbodiedGaussiansModel(warp.sim.Model):
+    gravity_factor: wp.array
 
 class ModelBuilder(warp.sim.ModelBuilder):
     def __init__(self, up_vector=(0.0, 0.0, 1.0), gravity=-9.80665):
@@ -44,10 +48,11 @@ class ModelBuilder(warp.sim.ModelBuilder):
             num_joints_given = len(initial_joints)
             self.joint_q[start_joint:num_joints_given] = initial_joints
 
-    def finalize(self, device=None, requires_grad=False):
+    def finalize(self, device=None, requires_grad=False) -> EmbodiedGaussiansModel:
         res = super().finalize(device, requires_grad)
+        res = cast(EmbodiedGaussiansModel, res)
         res.gravity_factor = wp.ones(
-            self.body_count, dtype=wp.float32, requires_grad=requires_grad
+            self.body_count, dtype=wp.float32, requires_grad=requires_grad # type: ignore
         )
         return res
     

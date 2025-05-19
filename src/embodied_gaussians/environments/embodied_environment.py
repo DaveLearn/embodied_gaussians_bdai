@@ -140,11 +140,11 @@ class EmbodiedGaussiansEnvironment(Environment):
 
     def save_builder(self, path: Path) -> None:
         b: EmbodiedGaussiansBuilder = self.sim.builder
-        if b.body_count > 0:
+        if b.body_count > 0 and self.sim.state_0.body_q is not None:
             b.body_q = self.sim.state_0.body_q.numpy().tolist()
-        if b.joint_count > 0:
+        if b.joint_count > 0 and self.sim.state_0.joint_q is not None:
             b.joint_q = self.sim.state_0.joint_q.numpy().tolist()
-        if b.particle_count > 0:
+        if b.particle_count > 0 and self.sim.state_0.particle_q is not None:
             b.particle_q = self.sim.state_0.particle_q.numpy().tolist()
         
         if b.num_gaussians() > 0:
@@ -156,7 +156,7 @@ class EmbodiedGaussiansEnvironment(Environment):
                 b.gaussian_colors = self.sim.gaussian_state.colors.cpu().numpy().tolist()
                 b.gaussian_body_ids = self.sim.gaussian_model.body_ids.cpu().numpy().tolist()
 
-        self.sim.builder.save_to_file(path)
+        self.sim.builder.save_to_file(str(path))
 
     def render_virtual_cameras(self, force: bool = False) -> torch.Tensor | None:
         if self.virtual_cameras is None:

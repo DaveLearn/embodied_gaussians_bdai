@@ -1,7 +1,7 @@
 # Copyright (c) 2025 Boston Dynamics AI Institute LLC. All rights reserved.
 
 from pathlib import Path
-from typing import Literal, List, Tuple, Union, Callable
+from typing import Literal, List, Tuple, Union, Callable, Final
 import numpy as np
 import torch
 from pydantic import BaseModel
@@ -52,7 +52,7 @@ def save_posed_images(path: Path, posed_images: List[PosedImage]) -> None:
     path = Path(path)
     assert path.suffix == ".npz" 
     path.parent.mkdir(parents=True, exist_ok=True)
-    np.savez_compressed(path, posed_images, allow_pickle=True)
+    np.savez_compressed(path, posed_images, allow_pickle=True) # type: ignore
 
 def load_posed_images(path: Path) -> np.ndarray:
     path = Path(path)
@@ -119,11 +119,10 @@ class Body(BaseModel):
 
 
 class GaussianActivations:
-    quat = torch.nn.functional.normalize
-    scale = torch.exp
-    opacity = torch.sigmoid
-    color = torch.sigmoid
-
-    inv_scale = torch.log
-    inv_opacity = torch.logit
-    inv_color = torch.logit
+    quat: Final[Callable[..., torch.Tensor]] = torch.nn.functional.normalize
+    scale: Final[Callable[[torch.Tensor], torch.Tensor]] = torch.exp
+    opacity: Final[Callable[[torch.Tensor], torch.Tensor]] = torch.sigmoid
+    color: Final[Callable[[torch.Tensor], torch.Tensor]] = torch.sigmoid
+    inv_scale: Final[Callable[[torch.Tensor], torch.Tensor]] = torch.log
+    inv_opacity: Final[Callable[[torch.Tensor], torch.Tensor]] = torch.logit
+    inv_color: Final[Callable[[torch.Tensor], torch.Tensor]] = torch.logit

@@ -10,8 +10,8 @@ def visualize(body: Body) -> None:
     o3d.visualization.draw_geometries(
         [
             o3d.geometry.TriangleMesh.create_coordinate_frame(0.1),
-            *sphere_meshes(body.particles.means, body.particles.radii[0], body.particles.colors),
-            *ellipsoid_meshes(body.gaussians),
+            *(sphere_meshes(body.particles.means, body.particles.radii[0], np.array(body.particles.colors)) if body.particles is not None else []),
+            *(ellipsoid_meshes(body.gaussians) if body.gaussians is not None else []),
         ]
     )
 

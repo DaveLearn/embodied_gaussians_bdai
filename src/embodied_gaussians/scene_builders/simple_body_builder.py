@@ -117,7 +117,7 @@ class SimpleBodyBuilder:
                     pc,
                     obb,
                     *sphere_meshes(
-                        sphere_means, settings.particle_radius
+                        sphere_means.tolist(), settings.particle_radius
                     ),
                 ]
             )
@@ -146,7 +146,7 @@ class SimpleBodyBuilder:
                     pc,
                     obb,
                     *sphere_meshes(
-                        particles.means, settings.particle_radius, particles.colors
+                        particles.means, settings.particle_radius, np.array(particles.colors)
                     ),
                 ]
             )
@@ -164,7 +164,7 @@ class SimpleBodyBuilder:
             visualize=visualize,
         )
         mask = find_distant_query_points(
-            settings.particle_radius * 2.3, gaussians.means, particles.means
+            settings.particle_radius * 2.3, np.array(gaussians.means), np.array(particles.means)
         )
         gaussians = gaussians.mask(~mask)
 
@@ -176,7 +176,7 @@ class SimpleBodyBuilder:
             o3d.visualization.draw_geometries(
                 [
                     o3d.geometry.TriangleMesh.create_coordinate_frame(0.1),
-                    *sphere_meshes(particles.means, settings.particle_radius, particles.colors),
+                    *sphere_meshes(particles.means, settings.particle_radius, np.array(particles.colors)),
                     *ellipsoid_meshes(gaussians),
                 ]
             )
@@ -335,7 +335,7 @@ class SimpleBodyBuilder:
     ) -> Particles:
         assert initial_points.shape[1] == 3
 
-        ground = torch.tensor(ground.plane).float().cuda()
+        ground_plane = torch.tensor(ground.plane).float().cuda()
         params = SimpleBodyBuilder._create_initial_gaussian_state(
             initial_points, radius
         )
@@ -403,7 +403,7 @@ class SimpleBodyBuilder:
             SimpleBodyBuilder._solve_collisions_jacobi(
                 params["means"].detach(),
                 GaussianActivations.scale(params["scales"].detach()[..., 0]),
-                ground,
+                ground_plane,
                 num_iterations=8,
                 relaxation=0.2,
                 cohesian_distance=cohesion_distance,
@@ -416,9 +416,9 @@ class SimpleBodyBuilder:
 
         return Particles(
             means=params["means"][mask].detach().cpu().numpy(),
-            quats=GaussianActivations.quat(params["quats"][mask]).detach().cpu().numpy(),
-            radii=GaussianActivations.scale(params["scales"][mask]).detach().cpu().numpy()[..., 0],
-            colors=GaussianActivations.color(params["colors"][mask]).detach().cpu().numpy(),
+            quats=GaussianActivations.quat(params["quats"][mask]).detach().cpu().numpy().tolist(),
+            radii=GaussianActivations.scale(params["scales"][mask]).detach().cpu().numpy()[..., 0].tolist(),
+            colors=GaussianActivations.color(params["colors"][mask]).detach().cpu().numpy().tolist(),
         )
 
     @staticmethod
@@ -497,10 +497,10 @@ class SimpleBodyBuilder:
         
         return Gaussians(
             means=params["means"].detach().cpu().numpy(),
-            quats=GaussianActivations.quat(params["quats"]).detach().cpu().numpy(),
-            scales=GaussianActivations.scale(params["scales"]).detach().cpu().numpy(),
-            opacities=GaussianActivations.opacity(params["opacities"]).detach().cpu().numpy(),
-            colors=GaussianActivations.color(params["colors"]).detach().cpu().numpy(),
+            quats=GaussianActivations.quat(params["quats"]).detach().cpu().numpy().tolist(),
+            scales=GaussianActivations.scale(params["scales"]).detach().cpu().numpy().tolist(),
+            opacities=GaussianActivations.opacity(params["opacities"]).detach().cpu().numpy().tolist(),
+            colors=GaussianActivations.color(params["colors"]).detach().cpu().numpy().tolist(),
         )
     
     @staticmethod
@@ -703,7 +703,7 @@ def solve_particle_particle_collisions(
     tid = wp.tid()
 
     # order threads by cell
-    i = wp.hash_grid_point_id(grid, tid)
+    i = wp.hash_grid_point_id(grid, tid) # type: ignore
     if i == -1:
         # hash grid has not been built yet
         return
@@ -713,12 +713,12 @@ def solve_particle_particle_collisions(
 
     # particle contact
     query = wp.hash_grid_query(grid, x, radius + max_radius + k_cohesion)
-    index = int(0)
+    index = int(0) 
 
     delta = wp.vec3(0.0)
     w1 = 1.0
 
-    while wp.hash_grid_query_next(query, index):
+    while wp.hash_grid_query_next(query, index): # type: ignore
         # compute distance to point
         n = x - particle_x[index]
         d = wp.length(n) + 1e-20

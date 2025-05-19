@@ -134,13 +134,14 @@ class DatasetManager:
                 ),
             )
         self.try_load_physics()
-        if self.load_frames and self.camera_data_found:
+        if self.load_frames and self.camera_data_found and self.camera_file:
             self.offline_cameras = OfflineCameras.from_dataset(
                 self.path / self.camera_file
             )
             self.initialize_frames()
 
     def initialize_frames(self) -> None:
+        assert self.offline_cameras
         cameras = self.offline_cameras
         w, h = cameras.resolution()
         frame_builder = FramesBuilder(width=w, height=h)
@@ -152,6 +153,7 @@ class DatasetManager:
         self.update_frames(0.0)
 
     def update_frames(self, timestamp: float) -> None:
+        assert self.offline_cameras
         cameras = self.offline_cameras
         # ind = self.physics_loader.get_index_at_timestamp(timestamp)
         # timestamp = ind * 1 / 60.0
