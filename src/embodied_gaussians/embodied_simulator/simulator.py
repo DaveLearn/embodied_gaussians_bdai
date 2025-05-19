@@ -29,7 +29,7 @@ class EmbodiedGaussianState:
     gaussian_state: GaussianState
 
 
-class EmbodiedGaussiansSimulator(Simulator):
+class EmbodiedGaussiansSimulator(Simulator[EmbodiedGaussiansBuilder]):
     def __init__(
         self,
         builder: EmbodiedGaussiansBuilder,
@@ -50,21 +50,21 @@ class EmbodiedGaussiansSimulator(Simulator):
     def get_specific_environment_state(self, env_ind: int) -> EmbodiedGaussianState:
         with torch.no_grad():
             sim = self
-            s = wp.to_torch(sim.state_0).reshape(self.num_envs(), -1, 7)[env_ind]
-            c = wp.to_torch(sim.control).reshape(self.num_envs(), -1)[env_ind]
-            g = sim.gaussian_state.reshape((self.num_envs(), -1, 7)).slice(env_ind).clone()
+            s = wp.to_torch(sim.state_0).reshape(self.num_envs, -1, 7)[env_ind]
+            c = wp.to_torch(sim.control).reshape(self.num_envs, -1)[env_ind]
+            g = sim.gaussian_state.reshape(self.num_envs, -1, 7).slice(env_ind).clone()
             s = wp.from_torch(s)
             c = wp.from_torch(c)
             return EmbodiedGaussianState(
-                physics_state=s, physics_control=c, gaussian_state=g
+                physics_state= s, physics_control=c, gaussian_state=g # type: ignore
             )
     
     def set_specific_environment_state(self, env_ind: int, state: EmbodiedGaussianState) -> None:
         sim = self
         with torch.no_grad():
-            wp.to_torch(sim.state_0).reshape(self.num_envs(), -1, 7)[env_ind] = wp.to_torch(state.physics_state)
-            wp.to_torch(sim.control).reshape(self.num_envs(), -1)[env_ind] = wp.to_torch(state.physics_control)
-            g = sim.gaussian_state.reshape((self.num_envs(), -1, 7)).slice(env_ind)
+            wp.to_torch(sim.state_0).reshape(self.num_envs, -1, 7)[env_ind] = wp.to_torch(state.physics_state)
+            wp.to_torch(sim.control).reshape(self.num_envs, -1)[env_ind] = wp.to_torch(state.physics_control)
+            g = sim.gaussian_state.reshape(self.num_envs, -1, 7).slice(env_ind)
             g.copy(state.gaussian_state)
 
     def embodied_gaussian_state(self) -> EmbodiedGaussianState:

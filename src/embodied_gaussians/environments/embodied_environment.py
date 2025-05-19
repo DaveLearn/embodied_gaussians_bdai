@@ -56,7 +56,7 @@ class EmbodiedGaussiansEnvironment(Environment):
         self.control = self.sim.model.control()
         self.virtual_cameras: VirtualCameras | None = None
         super().__init__()
-        self.streams: List[torch.cuda.Stream] = [torch.cuda.Stream() for _ in range(self.num_envs())]
+        self.streams: List[torch.cuda.Stream] = [torch.cuda.Stream() for _ in range(self.num_envs())] # type: ignore
         self.stash_state()
     
     def stash_state(self) -> None:

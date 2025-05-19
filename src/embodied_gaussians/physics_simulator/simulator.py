@@ -1,7 +1,7 @@
 # Copyright (c) 2025 Boston Dynamics AI Institute LLC. All rights reserved.
 
 from dataclasses import dataclass
-from typing import Optional
+from typing import Generic, Optional, TypeVar
 
 import numpy as np
 import torch
@@ -30,9 +30,11 @@ class PhysicsSettings:
     dt: float = 1.0 / 60.0
 
 
-class Simulator:
+TBuilderType = TypeVar("TBuilderType", bound=ModelBuilder)
+
+class Simulator(Generic[TBuilderType]):
     def __init__(
-        self, builder: ModelBuilder, device: str = "cuda", requires_grad: bool = False
+        self, builder: TBuilderType, device: str = "cuda", requires_grad: bool = False
     ) -> None:
         self.builder = builder
         self.device = device
