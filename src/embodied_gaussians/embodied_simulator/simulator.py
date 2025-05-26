@@ -1,7 +1,7 @@
 # Copyright (c) 2025 Boston Dynamics AI Institute LLC. All rights reserved.
 
 from typing import Literal, Optional, Tuple, Dict, Any
-import pysegreduce
+import pysegreduce # type: ignore
 from dataclasses import dataclass
 import torch
 import warp as wp

@@ -20,7 +20,7 @@ def integrate_rigid_body(
     gravity: wp.vec3,
     angular_damping: float,
     dt: float,
-) -> Tuple[wp.transform, wpt.spatial_vector]:
+):
     # unpack transform
     x0 = wp.transform_get_translation(q)
     r0 = wp.transform_get_rotation(q)

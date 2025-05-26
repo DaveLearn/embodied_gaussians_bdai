@@ -23,8 +23,8 @@ class SimulationGUI(marsoom.Window):
     def set_simulation(self, simulator: Simulator):
         self.viewer_3d.set_simulator(simulator)
 
-    async def run(self):
-        async for _ in periodic(1 / 60):
+    async def run_async(self, fps: float = 60.0):
+        async for _ in periodic(1 / fps):
             if self.should_exit():
                 break
             self.step()

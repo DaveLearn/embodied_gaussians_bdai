@@ -26,7 +26,7 @@ class OfflineCamera:
         self.decoder = VideoDecoder(video_path, device=device, dimension_order="NHWC")
         self.last_index: int | None = None
         self.num_frames = self.decoder.metadata.num_frames
-        self.index_look_up = PiecewisePolynomial.ZeroOrderHold(
+        self.index_look_up: PiecewisePolynomial = PiecewisePolynomial.ZeroOrderHold(
             timestamps,
             np.arange(0, self.num_frames).astype(np.float32).reshape(-1, 1).T,
         )

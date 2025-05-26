@@ -87,7 +87,7 @@ class SimpleBodyBuilder:
         )
         if obb is None:
             return None
-        obb.color = (1, 0, 0)
+        obb.color = np.array([1.0, 0.0, 0.0]) # type: ignore
 
         # ================ Step 3: Fill the bounding box with spheres =================
         sphere_means = SimpleBodyBuilder._fill_bounding_box_with_spheres(
@@ -266,7 +266,7 @@ class SimpleBodyBuilder:
         X_WO = np.eye(4, dtype=np.float32)
         X_WO[:3, :3] = obb.R
         X_WO[:3, 3] = obb.get_center()
-        extent = obb.extent - 2 * radius
+        extent = obb.extent - 2 * radius # type: ignore
         extent = np.ceil(extent / radius) * radius
         d = radius * 2.0
         n_x = int(extent[0] / d)

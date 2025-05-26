@@ -5,7 +5,7 @@ import typing
 from dataclasses import dataclass
 
 import torch
-from typing import Any, NoReturn
+from typing import Any, Generic, NoReturn, TypeVar
 
 
 @dataclass
@@ -15,10 +15,12 @@ class EnvironmentActions: ...
 @dataclass
 class EnvironmentObservations: ...
 
+TEnvironmentActions = TypeVar("TEnvironmentActions", bound=EnvironmentActions)
+TEnvironmentObservations = TypeVar("TEnvironmentObservations", bound=EnvironmentObservations)
 
-class Environment(abc.ABC):
+class Environment(Generic[TEnvironmentActions, TEnvironmentObservations], abc.ABC):
     @abc.abstractmethod
-    def observe(self) -> EnvironmentObservations:
+    def observe(self) -> TEnvironmentObservations:
         """Get the current environment observations."""
         ...
 
@@ -28,12 +30,12 @@ class Environment(abc.ABC):
         ...
 
     @abc.abstractmethod
-    def act(self, actions: EnvironmentActions) -> None:
+    def act(self, actions: TEnvironmentActions) -> None:
         """Apply actions to the environment."""
         ...
 
     @abc.abstractmethod
-    def default_actions(self) -> EnvironmentActions:
+    def default_actions(self) -> TEnvironmentActions:
         """Get default actions for the environment."""
         ...
 

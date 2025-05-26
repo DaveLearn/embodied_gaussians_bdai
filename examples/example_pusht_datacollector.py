@@ -53,7 +53,7 @@ class CollectGUI(marsoom.Window):
         self.press_latch = False
         self.new_demo()
 
-    async def run(self):
+    async def run_async(self):
         async def physics_loop():
             dt = self.pusht_env.dt()
             async for _ in periodic(dt):
@@ -228,7 +228,7 @@ async def main():
     wp.init()
     settings = tyro.cli(Settings)
     window = CollectGUI(settings)
-    await window.run()
+    await window.run_async()
 
 
 if __name__ == "__main__":

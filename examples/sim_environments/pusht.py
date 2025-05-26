@@ -45,7 +45,7 @@ class PushTEnvironmentObservations(EnvironmentObservations):
         )
 
 
-class PushTEnvironment(Environment, Task):
+class PushTEnvironment(Environment[PushTEnvironmentActions, PushTEnvironmentObservations], Task):
     @staticmethod
     def build(num_envs: int = 1):
         builder = ModelBuilder(up_vector=(0.0, 0.0, 1.0))

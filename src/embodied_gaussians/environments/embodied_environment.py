@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Callable, List, Optional
+from typing import Callable, List, Optional, overload
 
 import torch
 import trio
@@ -42,7 +42,7 @@ class EmbodiedGaussiansActions(EnvironmentActions):
     physics_control: warp.sim.Control
 
 
-class EmbodiedGaussiansEnvironment(Environment):
+class EmbodiedGaussiansEnvironment(Environment[EmbodiedGaussiansActions, EmbodiedGaussiansObservations]):
     def __init__(
         self,
         builder: EmbodiedGaussiansBuilder,
@@ -141,11 +141,11 @@ class EmbodiedGaussiansEnvironment(Environment):
     def save_builder(self, path: Path) -> None:
         b: EmbodiedGaussiansBuilder = self.sim.builder
         if b.body_count > 0 and self.sim.state_0.body_q is not None:
-            b.body_q = self.sim.state_0.body_q.numpy().tolist()
+            b.body_q = self.sim.state_0.body_q.numpy().tolist() # type: ignore
         if b.joint_count > 0 and self.sim.state_0.joint_q is not None:
-            b.joint_q = self.sim.state_0.joint_q.numpy().tolist()
+            b.joint_q = self.sim.state_0.joint_q.numpy().tolist() # type: ignore
         if b.particle_count > 0 and self.sim.state_0.particle_q is not None:
-            b.particle_q = self.sim.state_0.particle_q.numpy().tolist()
+            b.particle_q = self.sim.state_0.particle_q.numpy().tolist() # type: ignore
         
         if b.num_gaussians() > 0:
             with torch.no_grad():

@@ -11,7 +11,7 @@ import pyglet.gl as gl
 import torch
 import warp as wp
 from imgui_bundle import imgui
-from imgui_bundle import portable_file_dialogs as pfd
+from imgui_bundle import portable_file_dialogs as pfd # type: ignore
 from typing_extensions import override
 from pyglet.math import Vec3 as PyVec3
 
@@ -43,6 +43,11 @@ class VisualizerSettings:
     wireframe_alpha: float = 0.5
     wireframe_z_offset: float = 0.1
 
+class CameraWireframeWithImageAndTimestamp(marsoom.CameraWireframeWithImage):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.timestamp = -1.0
+
 
 class EmbodiedViewer(SimulationViewer):
     def __init__(self, window, show_origin: bool = True):
@@ -63,8 +68,8 @@ class EmbodiedViewer(SimulationViewer):
         self.last_selected_camera = 0
         self.settings = VisualizerSettings()
         self.env: EmbodiedGaussiansEnvironment | None = None
-        self.cameras: dict[str, marsoom.CameraWireframeWithImage] = {}
-        self.virtual_cameras: dict[str, marsoom.CameraWireframeWithImage] = {}
+        self.cameras: dict[str, CameraWireframeWithImageAndTimestamp] = {}
+        self.virtual_cameras: dict[str, CameraWireframeWithImageAndTimestamp] = {}
         self.save_dialog: pfd.save_file | None = None
 
     def set_environment(self, env: EmbodiedGaussiansEnvironment):
@@ -76,12 +81,12 @@ class EmbodiedViewer(SimulationViewer):
         if self.env is None:
             return
 
-        imgui.begin("Controls", flags=imgui.WindowFlags_.no_collapse)
+        imgui.begin("Controls", flags=imgui.WindowFlags_.no_collapse.value)
         s = self.settings
 
         # Style setup
-        imgui.push_style_var(imgui.StyleVar_.frame_padding, (4, 3))
-        imgui.push_style_var(imgui.StyleVar_.item_spacing, (4, 4))
+        imgui.push_style_var(imgui.StyleVar_.frame_padding.value, (4, 3))
+        imgui.push_style_var(imgui.StyleVar_.item_spacing.value, (4, 4))
 
         # Display Settings
         imgui.text("Display Settings")
@@ -176,21 +181,21 @@ class EmbodiedViewer(SimulationViewer):
                 "Camera Index", self.last_selected_camera, 0, num_cameras - 1
             )
 
-            imgui.push_style_var(imgui.StyleVar_.frame_padding, (8, 4))
-            imgui.push_style_var(imgui.StyleVar_.button_text_align, (0.5, 0.5))
+            imgui.push_style_var(imgui.StyleVar_.frame_padding.value, (8, 4))
+            imgui.push_style_var(imgui.StyleVar_.button_text_align.value, (0.5, 0.5))
 
-            imgui.push_style_color(imgui.Col_.button, (0.2, 0.5, 0.8, 0.8))
-            imgui.push_style_color(imgui.Col_.button_hovered, (0.3, 0.6, 0.9, 1.0))
-            imgui.push_style_color(imgui.Col_.button_active, (0.1, 0.4, 0.7, 1.0))
+            imgui.push_style_color(imgui.Col_.button.value, (0.2, 0.5, 0.8, 0.8))
+            imgui.push_style_color(imgui.Col_.button_hovered.value, (0.3, 0.6, 0.9, 1.0))
+            imgui.push_style_color(imgui.Col_.button_active.value, (0.1, 0.4, 0.7, 1.0))
             if imgui.button("Go##goto", (120, 30)):
                 self.go_to_camera(self.last_selected_camera)
             imgui.pop_style_color(3)
 
             imgui.same_line(spacing=10)
 
-            imgui.push_style_color(imgui.Col_.button, (0.8, 0.3, 0.3, 0.8))
-            imgui.push_style_color(imgui.Col_.button_hovered, (0.9, 0.4, 0.4, 1.0))
-            imgui.push_style_color(imgui.Col_.button_active, (0.7, 0.2, 0.2, 1.0))
+            imgui.push_style_color(imgui.Col_.button.value, (0.8, 0.3, 0.3, 0.8))
+            imgui.push_style_color(imgui.Col_.button_hovered.value, (0.9, 0.4, 0.4, 1.0))
+            imgui.push_style_color(imgui.Col_.button_active.value, (0.7, 0.2, 0.2, 1.0))
             if imgui.button("Reset##reset", (120, 30)):
                 self.reset_view()
             imgui.pop_style_color(3)
@@ -243,12 +248,12 @@ class EmbodiedViewer(SimulationViewer):
         imgui.text("Scene Settings")
         imgui.separator()
 
-        imgui.push_style_var(imgui.StyleVar_.frame_padding, (8, 4))
-        imgui.push_style_var(imgui.StyleVar_.button_text_align, (0.5, 0.5))
+        imgui.push_style_var(imgui.StyleVar_.frame_padding.value, (8, 4))
+        imgui.push_style_var(imgui.StyleVar_.button_text_align.value, (0.5, 0.5))
 
-        imgui.push_style_color(imgui.Col_.button, (0.2, 0.5, 0.8, 0.8))
-        imgui.push_style_color(imgui.Col_.button_hovered, (0.3, 0.6, 0.9, 1.0))
-        imgui.push_style_color(imgui.Col_.button_active, (0.1, 0.4, 0.7, 1.0))
+        imgui.push_style_color(imgui.Col_.button.value, (0.2, 0.5, 0.8, 0.8))
+        imgui.push_style_color(imgui.Col_.button_hovered.value, (0.3, 0.6, 0.9, 1.0))
+        imgui.push_style_color(imgui.Col_.button_active.value, (0.1, 0.4, 0.7, 1.0))
 
         if imgui.button("Stash State", (120, 30)):
             self.env.stash_state()
@@ -299,7 +304,7 @@ class EmbodiedViewer(SimulationViewer):
             return
         for i, name in enumerate(frames.names):
             if name not in self.cameras:
-                self.cameras[name] = marsoom.CameraWireframeWithImage(
+                self.cameras[name] = CameraWireframeWithImageAndTimestamp(
                     width=frames.width,
                     height=frames.height,
                     K=frames.Ks_cpu[i].numpy(),
@@ -332,7 +337,7 @@ class EmbodiedViewer(SimulationViewer):
             for i, name in enumerate(cameras.names):
                 camera_key = f"{name}_{j}"
                 if camera_key not in self.virtual_cameras:
-                    self.virtual_cameras[camera_key] = marsoom.CameraWireframeWithImage(
+                    self.virtual_cameras[camera_key] = CameraWireframeWithImageAndTimestamp(
                         width=cameras.width,
                         height=cameras.height,
                         K=cameras.K_cpu[i].numpy(),

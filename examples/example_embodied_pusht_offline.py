@@ -81,7 +81,7 @@ async def main():
 
     async with trio.open_nursery() as n:
         n.start_soon(playback_controls.run)
-        await visualizer.run()
+        await visualizer.run_async()
         n.cancel_scope.cancel()
 
 

@@ -1,6 +1,7 @@
 # Copyright (c) 2025 Boston Dynamics AI Institute LLC. All rights reserved.
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from typing import List, cast
 
 import torch
 import numpy as np
@@ -27,6 +28,7 @@ class VirtualCameras:
     rendered_images: torch.Tensor
     last_rendered_at: float = -1.0
     position_last_updated_at: float = -1.0
+    
 
     def __post_init__(self):
         assert self.X_WC.shape == self.X_CW_opencv.shape
@@ -36,7 +38,7 @@ class VirtualCameras:
         assert self.X_WC.shape[1] == self.T_BC.shape[0]
         assert self.T_BC.shape[-1] == 7
         self.K_cpu = self.K.cpu()
-        self.streams = [torch.cuda.Stream() for _ in range(self.num_envs)]
+        self.streams = [cast(torch.cuda.Stream, torch.cuda.Stream()) for _ in range(self.num_envs)]
 
     @property
     def num_cameras(self):
@@ -71,11 +73,11 @@ class VirtualCameras:
             return
         c = self
         num_envs = self.num_envs
-        gs = gaussian_state.reshape((num_envs, -1))
+        gs = gaussian_state.reshape(num_envs, -1)
         for env in range(num_envs):
             with torch.cuda.stream(self.streams[env]):
                 images, _, _ = render_gaussians(
-                    gs.slice(slice(env, env + 1, None)).reshape((-1,)),
+                    gs.slice(slice(env, env + 1, None)).reshape(-1),
                     Ks=c.K,
                     X_CWs=c.X_CW_opencv[env],
                     width=c.width,
