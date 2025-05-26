@@ -1,1 +1,1 @@
-from .sam_segementor import SamSegmentor
+from .sam_segementor import SamSegmentor as SamSegmentor

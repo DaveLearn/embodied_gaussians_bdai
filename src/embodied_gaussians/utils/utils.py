@@ -1,6 +1,5 @@
 # Copyright (c) 2025 Boston Dynamics AI Institute LLC. All rights reserved.
 
-import typing
 from typing import Dict, Iterator, Tuple
 
 from pathlib import Path

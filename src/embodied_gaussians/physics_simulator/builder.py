@@ -1,6 +1,6 @@
 # Copyright (c) 2025 Boston Dynamics AI Institute LLC. All rights reserved.
 
-from typing import Protocol, TypeVar, cast
+from typing import cast
 import numpy as np
 import warp as wp
 import warp.sim

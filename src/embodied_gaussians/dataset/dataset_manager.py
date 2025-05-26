@@ -4,11 +4,11 @@ import json
 import typing
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, List, Tuple, Any, Union
+from typing import Dict, Tuple, Any
 
 import numpy as np
 from pydrake.trajectories import PiecewisePolynomial
-from typing_extensions import override
+
 
 from embodied_gaussians import Body, EmbodiedGaussiansEnvironment, FramesBuilder, EmbodiedGaussiansLoader, OfflineCameras
 

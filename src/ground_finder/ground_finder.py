@@ -1,7 +1,6 @@
 # Copyright (c) 2025 Boston Dynamics AI Institute LLC. All rights reserved.
 
 from dataclasses import dataclass
-import typing
 
 import numpy as np
 
@@ -45,7 +44,7 @@ class GroundFinder:
         all_pointclouds = []
         for datapoint in datapoints:
             if datapoint.mask is not None:
-                datapoint.depth[datapoint.mask == False] = 0.0
+                datapoint.depth[datapoint.mask == False] = 0.0 # noqa: E712
 
             w = datapoint.depth.shape[1]
             h = datapoint.depth.shape[0]

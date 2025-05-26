@@ -7,7 +7,7 @@ import trio
 import trio.testing
 import tyro
 import warp as wp
-from marsoom import guizmo, imgui
+from marsoom import imgui
 from trio_util import periodic
 from typing_extensions import override
 

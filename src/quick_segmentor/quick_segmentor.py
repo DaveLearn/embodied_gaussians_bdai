@@ -25,6 +25,6 @@ class QuickSegmentor:
         mask = gui.get_mask()
         try:
             gui.master.destroy()
-        except:
+        except Exception:
             pass
         return mask

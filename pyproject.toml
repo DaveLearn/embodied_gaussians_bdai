@@ -30,7 +30,7 @@ dependencies=[
     "drake@https://github.com/RobotLocomotion/drake/releases/download/v1.37.0/drake-1.37.0-cp311-cp311-manylinux_2_35_x86_64.whl",  # Remove drake entirely when we create our own zero-order-hold
     "pyright",
     "pyrealsense2>=2.54.2,<3"
-]
+, "ruff>=0.11.11,<0.12"]
 
 
 [tool.pixi.project]
@@ -62,3 +62,10 @@ demo = "python examples/example_embodied_pusht_offline.py"
 
 [tool.pixi.activation]
 env = {LD_LIBRARY_PATH = "$CONDA_PREFIX/lib:$LD_LIBRARY_PATH"}
+
+[tool.ruff]
+include = ["pyproject.toml", "src/**/*.py", "scripts/**/*.py"]
+line-length = 150
+
+[tool.ruff.lint]
+select = ["E", "F"]

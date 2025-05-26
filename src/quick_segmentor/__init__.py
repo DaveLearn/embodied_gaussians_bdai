@@ -1,1 +1,1 @@
-from .quick_segmentor import QuickSegmentor
+from .quick_segmentor import QuickSegmentor as QuickSegmentor

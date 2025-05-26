@@ -1,2 +1,2 @@
-from embodied_gaussians.embodied_visualizer.visualizer import EmbodiedGUI
+from embodied_gaussians.embodied_visualizer.visualizer import EmbodiedGUI as EmbodiedGUI
 

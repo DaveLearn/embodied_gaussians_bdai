@@ -3,9 +3,7 @@
 
 from typing_extensions import override
 import warp as wp
-import warp.types as wpt
 import warp.sim
-from typing import Tuple
 
 
 @wp.func

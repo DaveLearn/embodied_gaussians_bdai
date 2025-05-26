@@ -4,7 +4,7 @@
 import dataclasses
 import pickle
 from pathlib import Path
-from typing import Union, Callable, TypeVar, Any, cast
+from typing import Callable, TypeVar, Any
 from typing_extensions import ParamSpec
 
 import numpy as np

@@ -1,7 +1,7 @@
 # Copyright (c) 2025 Boston Dynamics AI Institute LLC. All rights reserved.
 
 from pathlib import Path
-from typing import Literal, List, Tuple, Union, Callable, Final
+from typing import Literal, List, Callable, Final
 import numpy as np
 import torch
 from pydantic import BaseModel

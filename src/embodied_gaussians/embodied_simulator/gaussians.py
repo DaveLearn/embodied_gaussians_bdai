@@ -1,7 +1,7 @@
 # Copyright (c) 2025 Boston Dynamics AI Institute LLC. All rights reserved.
 
 from dataclasses import dataclass
-from typing import Tuple, Any, Union
+from typing import Union
 import torch
 
 

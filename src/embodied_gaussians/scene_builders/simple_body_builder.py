@@ -3,7 +3,7 @@
 from dataclasses import dataclass, field
 from collections import namedtuple
 import logging
-from typing import Optional, List, Dict, Tuple, Any
+from typing import Optional, List, Tuple
 
 import numpy as np
 import open3d as o3d
@@ -14,7 +14,7 @@ import warp as wp
 from scipy.spatial.transform import Rotation as R
 
 from gsplat.rendering import rasterization
-from gsplat.strategy import DefaultStrategy
+
 
 from embodied_gaussians.scene_builders.domain import (
     Particles,
@@ -388,7 +388,7 @@ class SimpleBodyBuilder:
                 optimizer.step()
 
             if visualize and i % 100 == 0:
-                depth = render_colors[..., -1]
+                #depth = render_colors[..., -1]
                 rgb = render_colors[..., :3].detach().cpu().numpy()
                 for cam in range(rgb.shape[0]):
                     cv2.imshow(f"color_{cam}", rgb[cam])
@@ -484,7 +484,7 @@ class SimpleBodyBuilder:
             params["scales"].detach().clamp_(inv_min_scale, inv_max_scale)
 
             if visualize and i % 100 == 0:
-                depth = render_colors[..., -1]
+                #depth = render_colors[..., -1]
                 rgb = render_colors[..., :3].detach().cpu().numpy()
                 for cam in range(rgb.shape[0]):
                     cv2.imshow(f"color_{cam}", rgb[cam])
@@ -534,7 +534,8 @@ class SimpleBodyBuilder:
         """
         points: (n, 3)
         X_WC expected in blender standard
-        returns: (n, 2) in pixel coordinates and (n,) boolean mask where True means the point is in front of the camera and in the image
+        returns: (n, 2) in pixel coordinates and (n,) boolean mask where True means the point is in front of the camera 
+        and in the image
         """
         X_WC = X_WC @ np.array(
             [[1, 0, 0, 0], [0, -1, 0, 0], [0, 0, -1, 0], [0.0, 0.0, 0.0, 1.0]]

@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Callable, List, Optional, overload
+from typing import Callable, List
 
 import torch
 import trio
@@ -149,7 +149,8 @@ class EmbodiedGaussiansEnvironment(Environment[EmbodiedGaussiansActions, Embodie
         
         if b.num_gaussians() > 0:
             with torch.no_grad():
-                # b.gaussian_means = self.sim.gaussian_state.means.cpu().numpy().tolist() # Do not add these to the builder, the builder takes in X_OG, this is X_WG (gaussian relative to the object vs world)
+                # b.gaussian_means = self.sim.gaussian_state.means.cpu().numpy().tolist() # Do not add these to the builder, 
+                # the builder takes in X_OG, this is X_WG (gaussian relative to the object vs world)
                 # b.gaussian_quats = self.sim.gaussian_state.quats.cpu().numpy().tolist() # Do not add these to the builder
                 b.gaussian_scales = self.sim.gaussian_state.scales.cpu().numpy().tolist()
                 b.gaussian_opacities = self.sim.gaussian_state.opacities.cpu().numpy().tolist()

@@ -2,7 +2,7 @@
 
 import open3d as o3d
 import numpy as np
-from typing import List, Union, Any
+from typing import List
 from scipy.spatial.transform import Rotation as R
 from embodied_gaussians.scene_builders.domain import Body, Gaussians
 
@@ -10,7 +10,9 @@ def visualize(body: Body) -> None:
     o3d.visualization.draw_geometries(
         [
             o3d.geometry.TriangleMesh.create_coordinate_frame(0.1),
-            *(sphere_meshes(body.particles.means, body.particles.radii[0], np.array(body.particles.colors)) if body.particles is not None else []),
+            *(sphere_meshes(body.particles.means, 
+                            body.particles.radii[0], 
+                            np.array(body.particles.colors)) if body.particles is not None else []),
             *(ellipsoid_meshes(body.gaussians) if body.gaussians is not None else []),
         ]
     )
