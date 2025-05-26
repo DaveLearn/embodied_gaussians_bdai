@@ -5,7 +5,7 @@ authors = [{name="Jad Abou-Chakra"}]
 description = "Physically Embodied Guassian Splatting"
 version = "0.1.0"
 dependencies=[
-    "warp-lang@https://pypi.nvidia.com/warp-lang/warp_lang-1.7.0.dev20250225-py3-none-manylinux2014_x86_64.whl", # update to 1.7.0 when released
+    "warp-lang==1.7.1",
     "torch>=2.5.1,<3",
     "tyro",
     "torchvision",
@@ -19,8 +19,8 @@ dependencies=[
     "open3d>=0.18.0,<0.19.0",
     "marsoom @ git+https://github.com/jc211/marsoom.git",
 
-    "torchcodec@https://download.pytorch.org/whl/cu124/TorchCodec-0.1.1%2Bcu124-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", # TODO: Make this not a wheel
-    "realsense @ git+https://github.com/jc211/realsense.git",
+    "torchcodec==0.1.1",
+    "realsense @ git+https://github.com/davelearn/realsense.git",
 
     "isegm @ git+https://github.com/jc211/ritm_interactive_segmentation", 
 
@@ -29,8 +29,9 @@ dependencies=[
     "pydantic", # TODO: Remove in favor of dataclasses only
     "drake@https://github.com/RobotLocomotion/drake/releases/download/v1.37.0/drake-1.37.0-cp311-cp311-manylinux_2_35_x86_64.whl",  # Remove drake entirely when we create our own zero-order-hold
     "pyright",
-    "pyrealsense2>=2.54.2,<3"
-, "ruff>=0.11.11,<0.12"]
+    "pyrealsense2>=2.54.2,<3",
+    "ruff>=0.11.11,<0.12"
+    ]
 
 
 [tool.pixi.project]
@@ -39,6 +40,7 @@ platforms = ["linux-64"]
 
 [tool.pixi.pypi-options]
 no-build-isolation = ["gsplat", "pysegreduce"]
+extra-index-urls = ["https://download.pytorch.org/whl/cu124"]
 
 [tool.pixi.system-requirements]
 cuda = "12.4"
