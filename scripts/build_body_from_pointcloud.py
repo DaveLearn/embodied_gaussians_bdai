@@ -37,7 +37,7 @@ class Params:
                 quats=0.0,
             ),
             min_scale=(0.0, 0.0, 0.0),
-            max_scale=(0.03, 0.03, 0.03)
+            max_scale=(0.03, 0.03, 0.03),
         )
     )
 
@@ -57,14 +57,10 @@ def main(params: Params):
     if not params.offline:
         datapoints = get_datapoints_from_live_cameras(extrinsics)
         if params.save_posed_images:
-            save_posed_images(
-                f"temp/posed_images/{params.save_path.stem}.npz", datapoints
-            )
+            save_posed_images(f"temp/posed_images/{params.save_path.stem}.npz", datapoints)
     else:
         try:
-            datapoints = load_posed_images(
-                f"temp/posed_images/{params.save_path.stem}.npz"
-            )
+            datapoints = load_posed_images(f"temp/posed_images/{params.save_path.stem}.npz")
         except FileNotFoundError:
             print("Posed images not found. Run with offline=False to generate them")
             return

@@ -1,7 +1,7 @@
 # Copyright (c) 2025 Boston Dynamics AI Institute LLC. All rights reserved.
 
 from typing import Literal, Tuple, Dict, Any
-import pysegreduce # type: ignore
+import pysegreduce  # type: ignore
 from dataclasses import dataclass
 import torch
 import warp as wp
@@ -56,9 +56,11 @@ class EmbodiedGaussiansSimulator(Simulator[EmbodiedGaussiansBuilder]):
             s = wp.from_torch(s)
             c = wp.from_torch(c)
             return EmbodiedGaussianState(
-                physics_state= s, physics_control=c, gaussian_state=g # type: ignore
+                physics_state=s,
+                physics_control=c,
+                gaussian_state=g,  # type: ignore
             )
-    
+
     def set_specific_environment_state(self, env_ind: int, state: EmbodiedGaussianState) -> None:
         sim = self
         with torch.no_grad():
@@ -71,17 +73,13 @@ class EmbodiedGaussiansSimulator(Simulator[EmbodiedGaussiansBuilder]):
         s = self.state_0
         c = self.control
         g = self.gaussian_state.clone()
-        return EmbodiedGaussianState(
-            physics_state=s, physics_control=c, gaussian_state=g
-        )
+        return EmbodiedGaussianState(physics_state=s, physics_control=c, gaussian_state=g)
 
     def clone_embodied_gaussian_state(self) -> EmbodiedGaussianState:
         s = self.clone_state()
         c = self.clone_control()
         g = self.gaussian_state.clone()
-        return EmbodiedGaussianState(
-            physics_state=s, physics_control=c, gaussian_state=g
-        )
+        return EmbodiedGaussianState(physics_state=s, physics_control=c, gaussian_state=g)
 
     def copy_embodied_gaussian_state(self, state: EmbodiedGaussianState) -> None:
         self.set_state(state.physics_state)
@@ -140,28 +138,20 @@ class EmbodiedGaussiansSimulator(Simulator[EmbodiedGaussiansBuilder]):
             **kwargs,
         )
 
-    def compute_visual_forces(
-        self, settings: VisualForcesSettings, frames: Frames, dt: float
-    ) -> None:
+    def compute_visual_forces(self, settings: VisualForcesSettings, frames: Frames, dt: float) -> None:
         self._compute_visual_forces(settings, frames, dt)
 
     def update_gaussian_transforms(self) -> None:
-        update_gaussian_transforms(
-            self.gaussian_model, self.state_0.body_q, self.gaussian_state
-        )
+        update_gaussian_transforms(self.gaussian_model, self.state_0.body_q, self.gaussian_state)
 
-    def _compute_visual_forces(
-        self, settings: VisualForcesSettings, frames: Frames, dt: float
-    ) -> None:
+    def _compute_visual_forces(self, settings: VisualForcesSettings, frames: Frames, dt: float) -> None:
         with torch.no_grad():
             self.visual_forces.means.copy_(self.gaussian_state.means)
             self.visual_forces.quats.copy_(self.gaussian_state.quats)
 
         # self.visual_forces.optimizer.reset_internal_state()
         self.visual_forces.set_learnings_rates([settings.lr_means, settings.lr_quats])
-        self.appearance_optimizer.set_learnings_rates(
-            [settings.lr_color, settings.lr_opacity, settings.lr_scale]
-        )
+        self.appearance_optimizer.set_learnings_rates([settings.lr_color, settings.lr_opacity, settings.lr_scale])
 
         for _ in range(settings.iterations):
             render_colors, render_alphas, info = rasterization(
@@ -212,7 +202,7 @@ class EmbodiedGaussiansSimulator(Simulator[EmbodiedGaussiansBuilder]):
             len(self.visual_forces._start_inds),
             self.visual_forces._total_forces.data_ptr(),
             0,
-        ) # Replace this with segmented reduce when it is implemented in warp
+        )  # Replace this with segmented reduce when it is implemented in warp
 
         pysegreduce.reduce_vec3f(
             self.visual_forces.moments.data_ptr(),
@@ -289,9 +279,7 @@ def update_gaussian_transforms(model: GaussianModel, body_q, out_state: Gaussian
     )
 
 
-def copy_embodied_gaussian_state(
-    dest: EmbodiedGaussianState, src: EmbodiedGaussianState
-):
+def copy_embodied_gaussian_state(dest: EmbodiedGaussianState, src: EmbodiedGaussianState):
     copy_state(dest.physics_state, src.physics_state)
     copy_control(dest.physics_control, src.physics_control)
     dest.gaussian_state.copy(src.gaussian_state)

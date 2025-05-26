@@ -14,8 +14,10 @@ class EnvironmentActions: ...
 @dataclass
 class EnvironmentObservations: ...
 
+
 TEnvironmentActions = TypeVar("TEnvironmentActions", bound=EnvironmentActions)
 TEnvironmentObservations = TypeVar("TEnvironmentObservations", bound=EnvironmentObservations)
+
 
 class Environment(Generic[TEnvironmentActions, TEnvironmentObservations], abc.ABC):
     @abc.abstractmethod

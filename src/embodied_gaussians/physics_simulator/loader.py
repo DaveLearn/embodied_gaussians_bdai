@@ -9,10 +9,12 @@ import zarr
 from pydrake.trajectories import PiecewisePolynomial
 from embodied_gaussians.utils.physics_utils import load_builder
 
+
 def as_np_array(val: zarr.Array | zarr.Group) -> np.ndarray:
     if isinstance(val, zarr.Group):
         raise ValueError(f"Expected array, got group: {val}")
-    return val[:] # type: ignore
+    return val[:]  # type: ignore
+
 
 class Loader:
     def __init__(self, device: str = "cuda"):
@@ -61,7 +63,7 @@ class Loader:
             self.state_body_f = as_np_array(root["state_body_f"])
             self.num_timestamps = self.state_body_q.shape[0]  # type: ignore
         if j > 0:
-            self.state_joint_q = as_np_array(root["state_joint_q"]) 
+            self.state_joint_q = as_np_array(root["state_joint_q"])
             self.state_joint_qd = as_np_array(root["state_joint_qd"])
             self.control_joint_act = as_np_array(root["control_joint_act"])
 
@@ -81,15 +83,9 @@ class Loader:
         state = warp.sim.State()
         control = warp.sim.Control()
         if p > 0:
-            state.particle_q = warp.from_numpy(
-                self.state_particle_q[index], device=device
-            )
-            state.particle_qd = warp.from_numpy(
-                self.state_particle_qd[index], device=device
-            )
-            state.particle_f = warp.from_numpy(
-                self.state_particle_f[index], device=device
-            )
+            state.particle_q = warp.from_numpy(self.state_particle_q[index], device=device)
+            state.particle_qd = warp.from_numpy(self.state_particle_qd[index], device=device)
+            state.particle_f = warp.from_numpy(self.state_particle_f[index], device=device)
 
         if b > 0:
             state.body_q = warp.from_numpy(self.state_body_q[index], device=device)
@@ -98,7 +94,5 @@ class Loader:
         if j > 0:
             state.joint_q = warp.from_numpy(self.state_joint_q[index], device=device)
             state.joint_qd = warp.from_numpy(self.state_joint_qd[index], device=device)
-            control.joint_act = warp.from_numpy(
-                self.control_joint_act[index], device=device
-            )
+            control.joint_act = warp.from_numpy(self.control_joint_act[index], device=device)
         return state, control

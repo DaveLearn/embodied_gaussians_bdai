@@ -27,9 +27,7 @@ def adam_step_kernel_vec4(
     v[i] = beta2 * v[i] + (1.0 - beta2) * wp.cw_mul(g[i], g[i])
     mhat = m[i] / (1.0 - wp.pow(beta1, (t + 1.0)))
     vhat = v[i] / (1.0 - wp.pow(beta2, (t + 1.0)))
-    sqrt_vhat = wp.vec4(
-        wp.sqrt(vhat[0]), wp.sqrt(vhat[1]), wp.sqrt(vhat[2]), wp.sqrt(vhat[3])
-    )
+    sqrt_vhat = wp.vec4(wp.sqrt(vhat[0]), wp.sqrt(vhat[1]), wp.sqrt(vhat[2]), wp.sqrt(vhat[3]))
     eps_vec3 = wp.vec4(eps, eps, eps, eps)
     params[i] = params[i] - lr * wp.cw_div(mhat, (sqrt_vhat + eps_vec3))
 
@@ -131,30 +129,14 @@ class Adam:
                 elif param.dtype == wp.float32:
                     dtype = wp.float32
                 elif param.dtype == wp.float16:
-                    dtype = (
-                        wp.float32
-                    )  # we always use fp32 for moments, even if params are fp16
+                    dtype = wp.float32  # we always use fp32 for moments, even if params are fp16
                 else:
-                    raise RuntimeError(
-                        f"Unsupported dtype for Warp Adam optimizer: {param.dtype}"
-                    )
+                    raise RuntimeError(f"Unsupported dtype for Warp Adam optimizer: {param.dtype}")
 
-                if (
-                    self.m[i] is None
-                    or self.m[i].shape != param.shape
-                    or self.m[i].dtype != param.dtype
-                ):
-                    self.m[i] = wp.zeros(
-                        shape=param.shape, dtype=dtype, device=param.device
-                    )
-                if (
-                    self.v[i] is None
-                    or self.v[i].shape != param.shape
-                    or self.v[i].dtype != param.dtype
-                ):
-                    self.v[i] = wp.zeros(
-                        shape=param.shape, dtype=dtype, device=param.device
-                    )
+                if self.m[i] is None or self.m[i].shape != param.shape or self.m[i].dtype != param.dtype:
+                    self.m[i] = wp.zeros(shape=param.shape, dtype=dtype, device=param.device)
+                if self.v[i] is None or self.v[i].shape != param.shape or self.v[i].dtype != param.dtype:
+                    self.v[i] = wp.zeros(shape=param.shape, dtype=dtype, device=param.device)
 
     def reset_internal_state(self):
         for m_i in self.m:

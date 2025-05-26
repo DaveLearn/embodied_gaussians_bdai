@@ -20,7 +20,6 @@ class Params:
     path: tyro.conf.PositionalRequiredArgs[Path]
 
 
-
 class DatasetVisualizer(EmbodiedGUI):
     def __init__(self, path: Path):
         super().__init__()
@@ -40,9 +39,7 @@ class DatasetVisualizer(EmbodiedGUI):
 
     def load_demo(self, demo_dir: Path):
         self.current_demo_path = demo_dir
-        self.dataset = dataset = DatasetManager(
-            demo_dir, camera_file="cameras.json"
-        )
+        self.dataset = dataset = DatasetManager(demo_dir, camera_file="cameras.json")
         if dataset.can_build_environment():
             env = dataset.build_environment()
             self.current_step = 0

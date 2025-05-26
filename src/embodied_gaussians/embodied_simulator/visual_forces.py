@@ -8,7 +8,6 @@ from embodied_gaussians.embodied_simulator.adam import Adam
 from embodied_gaussians.embodied_simulator.gaussians import GaussianModel, GaussianState
 
 
-
 @dataclass
 class VisualForcesSettings:
     iterations: int = 3
@@ -37,18 +36,12 @@ class VisualForces:
         self.device = device
         self.means = torch.zeros((num_gaussians, 3), dtype=torch.float32, device=device)
         self.quats = torch.zeros((num_gaussians, 4), dtype=torch.float32, device=device)
-        self.forces = torch.zeros(
-            (num_gaussians, 3), dtype=torch.float32, device=device
-        )
-        self.moments = torch.zeros(
-            (num_gaussians, 3), dtype=torch.float32, device=device
-        )
+        self.forces = torch.zeros((num_gaussians, 3), dtype=torch.float32, device=device)
+        self.moments = torch.zeros((num_gaussians, 3), dtype=torch.float32, device=device)
         self.means.requires_grad = True
         self.quats.requires_grad = True
 
-        bodies_affected_by_visual_forces_tensor = (
-            torch.tensor(bodies_affected_by_visual_forces).int().cuda()
-        )
+        bodies_affected_by_visual_forces_tensor = torch.tensor(bodies_affected_by_visual_forces).int().cuda()
         body_ids = gaussian_model.body_ids
         # find body ids that are affected by visual forces
         mask = torch.zeros_like(body_ids, dtype=torch.bool)
@@ -100,9 +93,7 @@ class VisualForces:
         end_inds = start_inds[1:] + [len(body_ids)]
         bids = body_ids[start_inds]
         mask = bids != -1
-        start_inds = torch.tensor(
-            start_inds, device=self.means.device, dtype=torch.int32
-        )
+        start_inds = torch.tensor(start_inds, device=self.means.device, dtype=torch.int32)
         end_inds = torch.tensor(end_inds, device=self.means.device, dtype=torch.int32)
 
         self._start_inds = start_inds[mask]
@@ -111,9 +102,5 @@ class VisualForces:
 
         self._num_bodies = len(self._start_inds)
 
-        self._total_forces = torch.zeros(
-            (self._num_bodies, 3), device=self.device, dtype=torch.float32
-        )
-        self._total_moments = torch.zeros(
-            (self._num_bodies, 3), device=self.device, dtype=torch.float32
-        )
+        self._total_forces = torch.zeros((self._num_bodies, 3), device=self.device, dtype=torch.float32)
+        self._total_moments = torch.zeros((self._num_bodies, 3), device=self.device, dtype=torch.float32)

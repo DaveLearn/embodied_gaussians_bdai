@@ -22,11 +22,12 @@ class RobotData:
     state_index_look_up: PiecewisePolynomial
     control_index_look_up: PiecewisePolynomial
 
+
 @dataclass
 class CameraData:
     name: str
     X_WC: np.ndarray  # Camera pose in world frame
-    K: np.ndarray     # Camera intrinsics
+    K: np.ndarray  # Camera intrinsics
     resolution: tuple[int, int]
     video_path: Path
     timestamps: np.ndarray
@@ -104,16 +105,8 @@ class DatasetManager:
                     resolution = tuple(md["resolution"])
                     video_path = path / camera_data["video_path"]
                     timestamps = np.array(md["timestamps"], dtype=np.float32)
-                    
-                    self.cameras.append(CameraData(
-                        name=serial,
-                        X_WC=_WC,
-                        K=K,
-                        resolution=resolution,
-                        video_path=video_path,
-                        timestamps=timestamps
-                    ))
 
+                    self.cameras.append(CameraData(name=serial, X_WC=_WC, K=K, resolution=resolution, video_path=video_path, timestamps=timestamps))
 
         self.robots: Dict[str, RobotData] = {}
         for robot_name, r in rs.items():
@@ -135,9 +128,7 @@ class DatasetManager:
             )
         self.try_load_physics()
         if self.load_frames and self.camera_data_found and self.camera_file:
-            self.offline_cameras = OfflineCameras.from_dataset(
-                self.path / self.camera_file
-            )
+            self.offline_cameras = OfflineCameras.from_dataset(self.path / self.camera_file)
             self.initialize_frames()
 
     def initialize_frames(self) -> None:
@@ -198,17 +189,13 @@ class DatasetManager:
     def progress(self) -> np.ndarray:
         assert self.physics_loader
         num_steps = self.physics_loader.num_steps
-        progress = np.linspace(
-            0.0, 1.0, self.physics_loader.num_steps, dtype=np.float32
-        ).reshape(num_steps, 1, 1)
+        progress = np.linspace(0.0, 1.0, self.physics_loader.num_steps, dtype=np.float32).reshape(num_steps, 1, 1)
         return progress
 
     def joints_desired(self) -> np.ndarray:
         assert self.physics_loader
         num_steps = self.physics_loader.num_steps
-        joints_desired = self.physics_loader.control_joint_act[:].reshape(
-            num_steps, -1, 1
-        )  # type: ignore
+        joints_desired = self.physics_loader.control_joint_act[:].reshape(num_steps, -1, 1)  # type: ignore
         return joints_desired
 
     def body_q(self) -> np.ndarray:

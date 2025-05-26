@@ -56,9 +56,9 @@ class EmbodiedGaussiansEnvironment(Environment[EmbodiedGaussiansActions, Embodie
         self.control = self.sim.model.control()
         self.virtual_cameras: VirtualCameras | None = None
         super().__init__()
-        self.streams: List[torch.cuda.Stream] = [torch.cuda.Stream() for _ in range(self.num_envs())] # type: ignore
+        self.streams: List[torch.cuda.Stream] = [torch.cuda.Stream() for _ in range(self.num_envs())]  # type: ignore
         self.stash_state()
-    
+
     def stash_state(self) -> None:
         self.stashed_state = self.sim.clone_embodied_gaussian_state()
 
@@ -141,15 +141,15 @@ class EmbodiedGaussiansEnvironment(Environment[EmbodiedGaussiansActions, Embodie
     def save_builder(self, path: Path) -> None:
         b: EmbodiedGaussiansBuilder = self.sim.builder
         if b.body_count > 0 and self.sim.state_0.body_q is not None:
-            b.body_q = self.sim.state_0.body_q.numpy().tolist() # type: ignore
+            b.body_q = self.sim.state_0.body_q.numpy().tolist()  # type: ignore
         if b.joint_count > 0 and self.sim.state_0.joint_q is not None:
-            b.joint_q = self.sim.state_0.joint_q.numpy().tolist() # type: ignore
+            b.joint_q = self.sim.state_0.joint_q.numpy().tolist()  # type: ignore
         if b.particle_count > 0 and self.sim.state_0.particle_q is not None:
-            b.particle_q = self.sim.state_0.particle_q.numpy().tolist() # type: ignore
-        
+            b.particle_q = self.sim.state_0.particle_q.numpy().tolist()  # type: ignore
+
         if b.num_gaussians() > 0:
             with torch.no_grad():
-                # b.gaussian_means = self.sim.gaussian_state.means.cpu().numpy().tolist() # Do not add these to the builder, 
+                # b.gaussian_means = self.sim.gaussian_state.means.cpu().numpy().tolist() # Do not add these to the builder,
                 # the builder takes in X_OG, this is X_WG (gaussian relative to the object vs world)
                 # b.gaussian_quats = self.sim.gaussian_state.quats.cpu().numpy().tolist() # Do not add these to the builder
                 b.gaussian_scales = self.sim.gaussian_state.scales.cpu().numpy().tolist()
@@ -167,9 +167,7 @@ class EmbodiedGaussiansEnvironment(Environment[EmbodiedGaussiansActions, Embodie
         c = self.virtual_cameras
         return c.render(self.time(), self.sim.gaussian_state)
 
-    async def run_with_clock(
-        self, clock: trio.testing.MockClock, callbacks: List[Callable] = []
-    ) -> None:
+    async def run_with_clock(self, clock: trio.testing.MockClock, callbacks: List[Callable] = []) -> None:
         async for _ in periodic(self.dt()):
             self.step()
             for callback in callbacks:

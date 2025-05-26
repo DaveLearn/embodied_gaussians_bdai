@@ -6,27 +6,23 @@ from typing import List
 from scipy.spatial.transform import Rotation as R
 from embodied_gaussians.scene_builders.domain import Body, Gaussians
 
+
 def visualize(body: Body) -> None:
     o3d.visualization.draw_geometries(
         [
             o3d.geometry.TriangleMesh.create_coordinate_frame(0.1),
-            *(sphere_meshes(body.particles.means, 
-                            body.particles.radii[0], 
-                            np.array(body.particles.colors)) if body.particles is not None else []),
+            *(sphere_meshes(body.particles.means, body.particles.radii[0], np.array(body.particles.colors)) if body.particles is not None else []),
             *(ellipsoid_meshes(body.gaussians) if body.gaussians is not None else []),
         ]
     )
+
 
 def ellipsoid_meshes(gaussians: Gaussians) -> List[o3d.geometry.TriangleMesh]:
     ellipsoid_meshes = []
     for i, mean in enumerate(gaussians.means):
         ellipsoid: o3d.geometry.TriangleMesh = o3d.geometry.TriangleMesh.create_sphere(radius=1.0)
-        ellipsoid.transform(np.array(
-            [[gaussians.scales[i][0], 0, 0, 0],
-            [0, gaussians.scales[i][1], 0, 0],
-            [0, 0, gaussians.scales[i][2], 0],
-            [0, 0, 0, 1]]
-        )
+        ellipsoid.transform(
+            np.array([[gaussians.scales[i][0], 0, 0, 0], [0, gaussians.scales[i][1], 0, 0], [0, 0, gaussians.scales[i][2], 0], [0, 0, 0, 1]])
         )
         ellipsoid.compute_vertex_normals()
         ellipsoid.paint_uniform_color(gaussians.colors[i])
@@ -38,11 +34,7 @@ def ellipsoid_meshes(gaussians: Gaussians) -> List[o3d.geometry.TriangleMesh]:
     return ellipsoid_meshes
 
 
-def sphere_meshes(
-    means: List[List[float]], 
-    radius: float, 
-    colors: np.ndarray | None = None
-) -> List[o3d.geometry.TriangleMesh]:
+def sphere_meshes(means: List[List[float]], radius: float, colors: np.ndarray | None = None) -> List[o3d.geometry.TriangleMesh]:
     sphere_meshes = []
     for i, mean in enumerate(means):
         sphere: o3d.geometry.TriangleMesh = o3d.geometry.TriangleMesh.create_sphere(radius=radius)

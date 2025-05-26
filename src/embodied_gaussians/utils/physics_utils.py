@@ -11,13 +11,15 @@ import numpy as np
 import warp as wp
 import warp.sim
 
-P = ParamSpec('P')
-T = TypeVar('T')
+P = ParamSpec("P")
+T = TypeVar("T")
+
 
 def load_builder(path: Path | str) -> warp.sim.ModelBuilder:
     with open(path, "rb") as file:
         loaded_builder = pickle.load(file)
     return loaded_builder
+
 
 def save_builder(path: Path | str, builder: warp.sim.ModelBuilder) -> None:
     for s in builder.shape_geo_src:
@@ -25,6 +27,7 @@ def save_builder(path: Path | str, builder: warp.sim.ModelBuilder) -> None:
             del s.mesh  # Cant be pickled and will be rebuilt anyway
     with open(path, "wb") as file:
         pickle.dump(builder, file)
+
 
 def load_mesh(url: str) -> warp.sim.Mesh:
     mesh_pts, mesh_indices = warp.sim.load_mesh(url)

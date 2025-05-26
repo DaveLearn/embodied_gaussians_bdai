@@ -1,7 +1,4 @@
-from embodied_gaussians.embodied_visualizer.visualizer import (
-    EmbodiedGUI,
-    EmbodiedViewer
-)
+from embodied_gaussians.embodied_visualizer.visualizer import EmbodiedGUI, EmbodiedViewer
 
 from embodied_gaussians.physics_visualizer.simulation_viewer import (
     SimulationViewer,
