@@ -56,8 +56,8 @@ class EmbodiedGaussiansSimulator(Simulator[EmbodiedGaussiansBuilder]):
             s = wp.from_torch(s)
             c = wp.from_torch(c)
             return EmbodiedGaussianState(
-                physics_state=s,
-                physics_control=c,
+                physics_state=s,  # type: ignore
+                physics_control=c,  # type: ignore
                 gaussian_state=g,  # type: ignore
             )
 

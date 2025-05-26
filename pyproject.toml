@@ -59,6 +59,10 @@ pysegreduce = { path = "dependencies/segreduce", editable = true }
 build_gsplat = "pip install git+https://github.com/nerfstudio-project/gsplat.git"
 build = {depends-on=["build_gsplat"]}
 demo = "python examples/example_embodied_pusht_offline.py"
+format = "ruff format"
+lint = "ruff check"
+typecheck = "pyright"
+check = [{ task = "format" }, { task = "lint" }, { task = "typecheck" }]
 
 [tool.pixi.activation]
 env = {LD_LIBRARY_PATH = "$CONDA_PREFIX/lib:$LD_LIBRARY_PATH"}
@@ -69,3 +73,8 @@ line-length = 150
 
 [tool.ruff.lint]
 select = ["E", "F"]
+
+[tool.pyright]
+include = [
+    "src"
+]

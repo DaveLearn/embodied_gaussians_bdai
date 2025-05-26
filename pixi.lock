@@ -1433,7 +1433,7 @@ packages:
 - pypi: .
   name: embodied-gaussians
   version: 0.1.0
-  sha256: 98e820860501da95239eea9b98fd09299bff017a326cef19924755287f0cbadc
+  sha256: 4477c23b2c7957f977f66160478576096a0134caeda8b3f6f01866edd149669e
   requires_dist:
   - warp-lang @ https://pypi.nvidia.com/warp-lang/warp_lang-1.7.0.dev20250225-py3-none-manylinux2014_x86_64.whl
   - torch>=2.5.1,<3

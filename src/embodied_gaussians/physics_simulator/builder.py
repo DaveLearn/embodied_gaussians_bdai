@@ -52,8 +52,8 @@ class ModelBuilder(warp.sim.ModelBuilder):
         res = cast(EmbodiedGaussiansModel, res)
         res.gravity_factor = wp.ones(
             self.body_count,
-            dtype=wp.float32,
-            requires_grad=requires_grad,  # type: ignore
+            dtype=wp.float32,  # type: ignore
+            requires_grad=requires_grad,
         )
         return res
 
