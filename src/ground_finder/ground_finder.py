@@ -59,7 +59,7 @@ class GroundFinder:
             depth_image = o3d.geometry.Image(datapoint.depth)
             if datapoint.image is not None:
                 color_image = o3d.geometry.Image(datapoint.image)
-                rgbd_image = o3d.geometry.RGBDImage.create_from_color_and_depth(color_image, depth_image, convert_rgb_to_intensity=False)
+                rgbd_image = o3d.geometry.RGBDImage.create_from_color_and_depth(color_image, depth_image, depth_scale=datapoint.depth_scale,convert_rgb_to_intensity=False)
                 pointcloud = o3d.geometry.PointCloud.create_from_rgbd_image(rgbd_image, intrinsics)
             else:
                 pointcloud = o3d.geometry.PointCloud.create_from_depth_image(
@@ -74,6 +74,10 @@ class GroundFinder:
         final_pointcloud = o3d.geometry.PointCloud()
         for p in all_pointclouds:
             final_pointcloud += p
+
+        if visualize:
+            #origin = o3d.geometry.TriangleMesh.create_coordinate_frame(size=1.0, origin=[0, 0, 0])
+            o3d.visualization.draw_geometries([*all_pointclouds])
 
         # ====================
         # FIT PLANE
@@ -116,6 +120,7 @@ class GroundFinder:
             if k >= 1:
                 final_points.append(p)
         final_points = np.array(final_points)
+        print(f"Found {len(final_points)} points on the ground")
         plane_points = o3d.geometry.PointCloud(o3d.utility.Vector3dVector(final_points))
 
         res = GroundFinderResult(plane_model, final_points)
