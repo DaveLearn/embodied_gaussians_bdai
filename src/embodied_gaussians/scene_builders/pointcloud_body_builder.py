@@ -121,7 +121,7 @@ class PointCloudBodyBuilder:
         #         ]
         #     )
 
-        datapoints = [datapoints[0]]  # , datapoints[1]]#, datapoints[2]]
+        #datapoints = [datapoints[0]]  # , datapoints[1]]#, datapoints[2]]
         gt_data = PointCloudBodyBuilder._get_rasterization_groundtruth(datapoints, max_depth=max_depth)
         groundtruth = None
         groundtruth_depth = None
@@ -159,22 +159,22 @@ class PointCloudBodyBuilder:
             gt_data.images[gt_data.masks == 0, :] = background
 
             render_colors, render_alphas, info = rasterization(
-                means=params["means"],
-                quats=GaussianActivations.quat(params["quats"]),
-                scales=GaussianActivations.scale(params["scales"]),
-                colors=GaussianActivations.color(params["colors"]),
-                opacities=GaussianActivations.opacity(params["opacities"]),
-                viewmats=gt_data.X_CWs,
-                Ks=gt_data.Ks,
+                means=params["means"].unsqueeze(0),
+                quats=GaussianActivations.quat(params["quats"]).unsqueeze(0),
+                scales=GaussianActivations.scale(params["scales"]).unsqueeze(0),
+                colors=GaussianActivations.color(params["colors"]).unsqueeze(0),
+                opacities=GaussianActivations.opacity(params["opacities"]).unsqueeze(0),
+                viewmats=gt_data.X_CWs.unsqueeze(0),
+                Ks=gt_data.Ks.unsqueeze(0),
                 width=gt_data.width,
                 height=gt_data.height,
                 camera_model="pinhole",
                 render_mode="RGB+D",
-                backgrounds=background.reshape(1, 3).repeat(num_images, 1),
+                #backgrounds=background.reshape(1, 3).repeat(num_images, 1).unsqueeze(0),
             )
 
             w_photmetric = 1.0
-            loss = w_photmetric * torch.nn.functional.mse_loss(render_colors[..., :3], gt_data.images)
+            loss = w_photmetric * torch.nn.functional.mse_loss(render_colors[..., :3], gt_data.images.unsqueeze(0))
             # for j in range(len(gt_data.depth_masks)):
             #     depth_mask = gt_data.depth_masks[j]
             #     valid_depth_pixels = gt_data.valid_depth_pixels[j]
@@ -193,8 +193,8 @@ class PointCloudBodyBuilder:
                 assert groundtruth is not None
                 assert groundtruth_depth is not None
                 num_images = gt_data.images.shape[0]
-                rgb = render_colors[..., :3].detach().cpu().numpy()
-                depth = render_colors[..., -1].detach().cpu().numpy()
+                rgb = render_colors[..., :3].squeeze(0).detach().cpu().numpy()
+                depth = render_colors[..., -1].squeeze(0).detach().cpu().numpy()
                 aspect = rgb.shape[1] / rgb.shape[2]
                 rgb = np.concatenate([i for i in rgb], axis=1)
                 rgb = np.concatenate([rgb, groundtruth], axis=0)
