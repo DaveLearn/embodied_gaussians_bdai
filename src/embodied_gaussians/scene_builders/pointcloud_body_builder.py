@@ -121,7 +121,7 @@ class PointCloudBodyBuilder:
         #         ]
         #     )
 
-        #datapoints = [datapoints[0]]  # , datapoints[1]]#, datapoints[2]]
+        # datapoints = [datapoints[0]]  # , datapoints[1]]#, datapoints[2]]
         gt_data = PointCloudBodyBuilder._get_rasterization_groundtruth(datapoints, max_depth=max_depth)
         groundtruth = None
         groundtruth_depth = None
@@ -170,7 +170,7 @@ class PointCloudBodyBuilder:
                 height=gt_data.height,
                 camera_model="pinhole",
                 render_mode="RGB+D",
-                packed=False, # TODO remove this once gsplat fixes assertion bug on backgrounds
+                packed=False,  # TODO remove this once gsplat fixes assertion bug on backgrounds
                 backgrounds=background.reshape(1, 3).repeat(num_images, 1),
             )
 

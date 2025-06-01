@@ -109,7 +109,7 @@ class EmbodiedGaussiansSimulator(Simulator[EmbodiedGaussiansBuilder]):
                 camera_model="pinhole",
                 render_mode="RGB",
                 backgrounds=background.reshape(1, 3).repeat(num_images, 1),
-                packed=False, # TODO remove this once gsplat fixes assertion bug on backgrounds
+                packed=False,  # TODO remove this once gsplat fixes assertion bug on backgrounds
             )
         return render_colors, render_alphas, info
 
@@ -167,7 +167,7 @@ class EmbodiedGaussiansSimulator(Simulator[EmbodiedGaussiansBuilder]):
                 height=int(frames.height),
                 camera_model="pinhole",
                 render_mode="RGB",
-                packed=False, # TODO remove this once gsplat fixes assertion bug on backgrounds
+                packed=False,  # TODO remove this once gsplat fixes assertion bug on backgrounds
             )
 
             loss = torch.nn.functional.mse_loss(render_colors, frames.colors_gpu)
@@ -257,7 +257,7 @@ def render_gaussians(
             backgrounds=background.reshape(1, 3).repeat(num_images, 1),
             near_plane=near_plane,
             far_plane=far_plane,
-            packed=False, # TODO remove this once gsplat fixes assertion bug on backgrounds
+            packed=False,  # TODO remove this once gsplat fixes assertion bug on backgrounds
             **kwargs,
         )
     return render_colors, render_alphas, info
