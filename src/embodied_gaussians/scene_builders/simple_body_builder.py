@@ -298,13 +298,14 @@ class SimpleBodyBuilder:
         max_depth: float,
         cohesion_distance: float = 0.001,
         visualize: bool = False,
+        instance_id: int = 1
     ) -> Particles:
         assert initial_points.shape[1] == 3
 
         ground_plane = torch.tensor(ground.plane).float().cuda()
         params = SimpleBodyBuilder._create_initial_gaussian_state(initial_points, radius)
 
-        gt_data = SimpleBodyBuilder._get_rasterization_groundtruth(datapoints, max_depth)
+        gt_data = SimpleBodyBuilder._get_rasterization_groundtruth(datapoints, max_depth, instance_id)
         optimizers = SimpleBodyBuilder._create_optimizers_for_params(
             params,
             {
@@ -340,7 +341,9 @@ class SimpleBodyBuilder:
                 backgrounds=background.reshape(1, 3).repeat(num_images, 1),
             )
 
-            loss = torch.nn.functional.mse_loss(render_colors[..., :3], gt_data.images)
+            # we want no loss if there is an occlusion, only our current instance and background
+            loss_masks = (gt_data.masks == 0) | (gt_data.masks == instance_id)
+            loss = torch.nn.functional.mse_loss(render_colors[..., :3][loss_masks], gt_data.images[loss_masks])
             # for j in range(len(gt_data.depth_masks)):
             #     depth_mask = gt_data.depth_masks[j]
             #     depth_loss = torch.nn.functional.mse_loss(render_colors[j, ..., -1][depth_mask], gt_data.depths[j][depth_mask])
@@ -396,11 +399,12 @@ class SimpleBodyBuilder:
         max_scale: float,
         max_depth: float,
         visualize: bool = False,
+        instance_id: int = 1
     ) -> Gaussians:
         assert initial_points.shape[1] == 3
         params = SimpleBodyBuilder._create_initial_gaussian_state(initial_points, radius)
 
-        gt_data = SimpleBodyBuilder._get_rasterization_groundtruth(datapoints, max_depth=max_depth)
+        gt_data = SimpleBodyBuilder._get_rasterization_groundtruth(datapoints, max_depth=max_depth, instance_id=instance_id)
         optimizers = SimpleBodyBuilder._create_optimizers_for_params(
             params,
             {
@@ -436,7 +440,8 @@ class SimpleBodyBuilder:
                 backgrounds=background.reshape(1, 3).repeat(num_images, 1),
             )
 
-            loss = torch.nn.functional.mse_loss(render_colors[..., :3], gt_data.images)
+            loss_masks = (gt_data.masks == 0) | (gt_data.masks == instance_id)
+            loss = torch.nn.functional.mse_loss(render_colors[..., :3][loss_masks], gt_data.images[loss_masks])
             params.zero_grad()
             loss.backward()
 
@@ -543,7 +548,7 @@ class SimpleBodyBuilder:
                 xyz.add_(deltas)
 
     @staticmethod
-    def _get_rasterization_groundtruth(datapoints: List[MaskedPosedImageAndDepth], max_depth: float):
+    def _get_rasterization_groundtruth(datapoints: List[MaskedPosedImageAndDepth], max_depth: float, instance_id: int = 1):
         X_CWs = []
         Ks = []
         gts = []
@@ -571,7 +576,7 @@ class SimpleBodyBuilder:
             masks.append(mask)
 
             image = torch.from_numpy(datapoint.image).float().cuda() / 255.0
-            image[datapoint.mask == 0, :] = 0.0
+            image[datapoint.mask != instance_id, :] = 0.0
             depth = torch.from_numpy(datapoint.depth).float().cuda() * datapoint.depth_scale
             depth_mask = (depth > 0).__and__(depth < max_depth)
             depth_masks.append(depth_mask)
