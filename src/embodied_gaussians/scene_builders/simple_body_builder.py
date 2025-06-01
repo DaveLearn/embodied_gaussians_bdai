@@ -334,6 +334,7 @@ class SimpleBodyBuilder:
                 height=gt_data.height,
                 camera_model="pinhole",
                 render_mode="RGB+D",
+                packed=False, # TODO remove this once gsplat fixes assertion bug on backgrounds
                 backgrounds=background.reshape(1, 3).repeat(num_images, 1),
             )
 
@@ -429,6 +430,7 @@ class SimpleBodyBuilder:
                 height=gt_data.height,
                 camera_model="pinhole",
                 render_mode="RGB+D",
+                packed=False, # TODO remove this once gsplat fixes assertion bug on backgrounds
                 backgrounds=background.reshape(1, 3).repeat(num_images, 1),
             )
 
