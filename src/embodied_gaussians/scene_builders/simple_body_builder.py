@@ -298,7 +298,7 @@ class SimpleBodyBuilder:
         max_depth: float,
         cohesion_distance: float = 0.001,
         visualize: bool = False,
-        instance_id: int = 1
+        instance_id: int = 1,
     ) -> Particles:
         assert initial_points.shape[1] == 3
 
@@ -399,7 +399,7 @@ class SimpleBodyBuilder:
         max_scale: float,
         max_depth: float,
         visualize: bool = False,
-        instance_id: int = 1
+        instance_id: int = 1,
     ) -> Gaussians:
         assert initial_points.shape[1] == 3
         params = SimpleBodyBuilder._create_initial_gaussian_state(initial_points, radius)
