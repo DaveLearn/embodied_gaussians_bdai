@@ -108,9 +108,13 @@ class EmbodiedGaussiansSimulator(Simulator[EmbodiedGaussiansBuilder]):
                 height=int(height),
                 camera_model="pinhole",
                 render_mode="RGB",
-                backgrounds=background.reshape(1, 3).repeat(num_images, 1),
-                packed=False,  # TODO remove this once gsplat fixes assertion bug on backgrounds
+                #backgrounds=background.reshape(1, 3).repeat(num_images, 1),
+                packed=True
             )
+
+            # todo: replace with backgrounds above when gsplat fixes assertion bug on packed rasterization
+            backgrounds = background.reshape(1, 3).repeat(num_images, 1)
+            render_colors = render_colors + backgrounds * (1 - render_alphas)
         return render_colors, render_alphas, info
 
     def render_gaussians(
@@ -254,12 +258,17 @@ def render_gaussians(
             height=int(height),
             camera_model="pinhole",
             render_mode=render_mode,
-            backgrounds=background.reshape(1, 3).repeat(num_images, 1),
+            #backgrounds=background.reshape(1, 3).repeat(num_images, 1),
             near_plane=near_plane,
             far_plane=far_plane,
-            packed=False,  # TODO remove this once gsplat fixes assertion bug on backgrounds
+            #packed=False,  # TODO remove this once gsplat fixes assertion bug on backgrounds
             **kwargs,
         )
+
+        # todo: replace with backgrounds above when gsplat fixes assertion bug on packed rasterization
+        backgrounds = background.reshape(1, 3).repeat(num_images, 1)
+        render_colors = render_colors + backgrounds * (1 - render_alphas)
+
     return render_colors, render_alphas, info
 
 
