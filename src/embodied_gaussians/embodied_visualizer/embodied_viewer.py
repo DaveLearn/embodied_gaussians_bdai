@@ -62,7 +62,7 @@ class EmbodiedViewer(SimulationViewer):
             np.array(mesh.vertex_normals),
         )
         self.vector_renderer = VectorRenderer()
-        self.gaussian_texture = marsoom.Texture(640, 480, fmt=gl.GL_BGR)
+        self.gaussian_texture = marsoom.Texture(640, 480, fmt=gl.GL_RGB)
         self.gaussian_overlay = marsoom.Overlay(self.gaussian_texture.id, alpha=1.0)  # type: ignore
         self.batch_cameras = pyglet.graphics.Batch()
         self.batch_virtual_cameras = pyglet.graphics.Batch()
@@ -281,7 +281,7 @@ class EmbodiedViewer(SimulationViewer):
                     K=frames.Ks_cpu[i].numpy(),
                     batch=self.batch_cameras,
                     alpha=self.settings.wireframe_alpha,
-                    texture_fmt=gl.GL_BGR,
+                    texture_fmt=gl.GL_RGB,
                 )
                 self.cameras[name].matrix = pyglet.math.Mat4(frames.X_WCs_cpu[i].T.flatten().numpy())
                 self.cameras[name].timestamp = -1.0
@@ -312,7 +312,7 @@ class EmbodiedViewer(SimulationViewer):
                         K=cameras.K_cpu[i].numpy(),
                         batch=self.batch_virtual_cameras,
                         alpha=self.settings.wireframe_alpha,
-                        texture_fmt=gl.GL_BGR,
+                        texture_fmt=gl.GL_RGB,
                     )
                     self.virtual_cameras[camera_key].timestamp = -1.0
                 camera = self.virtual_cameras[camera_key]

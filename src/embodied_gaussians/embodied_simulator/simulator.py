@@ -158,7 +158,7 @@ class EmbodiedGaussiansSimulator(Simulator[EmbodiedGaussiansBuilder]):
         self.visual_forces.set_learnings_rates([settings.lr_means, settings.lr_quats])
         self.appearance_optimizer.set_learnings_rates([settings.lr_color, settings.lr_opacity, settings.lr_scale])
 
-        for _ in range(settings.iterations):
+        for i in range(settings.iterations):
             render_colors, render_alphas, info = rasterization(
                 means=self.visual_forces.means,
                 quats=self.visual_forces.quats,
@@ -177,7 +177,8 @@ class EmbodiedGaussiansSimulator(Simulator[EmbodiedGaussiansBuilder]):
             loss = torch.nn.functional.mse_loss(render_colors, frames.colors_gpu)
             # ideas: add a loss that pushes the colors back to their orignal values or to some sort of ema colors
             # ideas: allow the gaussians to jitter a bit while anchoring them to the original positions
-
+            if (i == 0):
+                print("loss", loss)
             self.visual_forces.zero_grad()
             self.appearance_optimizer.zero_grad()
             loss.backward()
