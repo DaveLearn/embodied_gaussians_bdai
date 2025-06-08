@@ -45,15 +45,13 @@ class EmbodiedGaussiansActions(EnvironmentActions):
 class EmbodiedGaussiansEnvironment(Environment[EmbodiedGaussiansActions, EmbodiedGaussiansObservations]):
     def __init__(
         self,
-        builder: EmbodiedGaussiansBuilder,
-        device: str = "cuda",
-        requires_grad: bool = False,
+        sim: EmbodiedGaussiansSimulator,
     ) -> None:
         self.frames: Frames | None = None
         self.physics_settings = PhysicsSettings(substeps=20, xpbd_iterations=3)
         self.visual_forces_settings = VisualForcesSettings()
-        self.sim = EmbodiedGaussiansSimulator(builder, device, requires_grad)
-        self.control = self.sim.model.control()
+        self.sim = sim
+        #self.control = self.sim.model.control()
         self.virtual_cameras: VirtualCameras | None = None
         super().__init__()
         self.streams: List[torch.cuda.Stream] = [torch.cuda.Stream() for _ in range(self.num_envs())]  # type: ignore

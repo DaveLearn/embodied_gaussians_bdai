@@ -4,8 +4,10 @@ import json
 import typing
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, Tuple, Any
+from typing import Dict, Tuple, Any, cast
 
+from embodied_gaussians.embodied_simulator.builder import EmbodiedGaussiansBuilder
+from embodied_gaussians.embodied_simulator.simulator import EmbodiedGaussiansSimulator
 import numpy as np
 from pydrake.trajectories import PiecewisePolynomial
 
@@ -70,7 +72,9 @@ class DatasetManager:
     def build_environment(self) -> EmbodiedGaussiansEnvironment:
         assert self.physics_loader
         builder = self.physics_loader.builder
-        env = EmbodiedGaussiansEnvironment(builder)  # type: ignore
+        assert builder is not None
+        sim = EmbodiedGaussiansSimulator(cast(EmbodiedGaussiansBuilder, builder))
+        env = EmbodiedGaussiansEnvironment(sim)  # type: ignore
         s = self.physics_loader.get_embodied_gaussian_state_at_index(0)
         env.sim.copy_embodied_gaussian_state(s)
         env.stash_state()

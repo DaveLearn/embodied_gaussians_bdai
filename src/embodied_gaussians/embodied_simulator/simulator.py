@@ -177,8 +177,7 @@ class EmbodiedGaussiansSimulator(Simulator[EmbodiedGaussiansBuilder]):
             loss = torch.nn.functional.mse_loss(render_colors, frames.colors_gpu)
             # ideas: add a loss that pushes the colors back to their orignal values or to some sort of ema colors
             # ideas: allow the gaussians to jitter a bit while anchoring them to the original positions
-            if (i == 0):
-                print("loss", loss)
+           
             self.visual_forces.zero_grad()
             self.appearance_optimizer.zero_grad()
             loss.backward()
