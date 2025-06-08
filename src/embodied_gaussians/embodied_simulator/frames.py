@@ -1,7 +1,7 @@
 # Copyright (c) 2025 Boston Dynamics AI Institute LLC. All rights reserved.
 
 from dataclasses import dataclass
-from typing import List
+from typing import List, Optional
 import numpy as np
 import torch
 
@@ -17,17 +17,21 @@ class Frames:
     X_WCs_cpu: torch.Tensor
     X_CWs_opencv_gpu: torch.Tensor
     colors_gpu: torch.Tensor  # float32, [h, w, 3] [0, 1] RGB
+    depths_gpu: torch.Tensor  # float32, [h, w] 
     device: str = "cuda"
 
     """
     colors_gpu is expected to be in rgb format
     """
 
-    def update_colors(self, name: str, timestamp: float, color: torch.Tensor) -> None:
+    def update_colors(self, name: str, timestamp: float, color: torch.Tensor, depth: Optional[torch.Tensor] = None) -> None:
         index = self.names.index(name)
         assert color.shape == (self.height, self.width, 3)
         self.timestamps[index] = timestamp
         self.colors_gpu[index].copy_(color)
+        if depth is not None:
+            assert depth.shape == (self.height, self.width)
+            self.depths_gpu[index].copy_(depth)
 
 
 class FramesBuilder:
@@ -61,6 +65,11 @@ class FramesBuilder:
             X_CWs_opencv_gpu=torch.stack(self.X_CWs_opencv).float().to(device),
             colors_gpu=torch.zeros(
                 (num_frames, self.height, self.width, 3),
+                dtype=torch.float32,
+                device=device,
+            ),
+            depths_gpu=torch.zeros(
+                (num_frames, self.height, self.width),
                 dtype=torch.float32,
                 device=device,
             ),
