@@ -108,8 +108,8 @@ class EmbodiedGaussiansSimulator(Simulator[EmbodiedGaussiansBuilder]):
                 height=int(height),
                 camera_model="pinhole",
                 render_mode="RGB",
-                #backgrounds=background.reshape(1, 3).repeat(num_images, 1),
-                packed=True
+                # backgrounds=background.reshape(1, 3).repeat(num_images, 1),
+                packed=True,
             )
 
             # todo: replace with backgrounds above when gsplat fixes assertion bug on packed rasterization
@@ -177,7 +177,7 @@ class EmbodiedGaussiansSimulator(Simulator[EmbodiedGaussiansBuilder]):
             loss = torch.nn.functional.mse_loss(render_colors, frames.colors_gpu)
             # ideas: add a loss that pushes the colors back to their orignal values or to some sort of ema colors
             # ideas: allow the gaussians to jitter a bit while anchoring them to the original positions
-           
+
             self.visual_forces.zero_grad()
             self.appearance_optimizer.zero_grad()
             loss.backward()
@@ -258,10 +258,10 @@ def render_gaussians(
             height=int(height),
             camera_model="pinhole",
             render_mode=render_mode,
-            #backgrounds=background.reshape(1, 3).repeat(num_images, 1),
+            # backgrounds=background.reshape(1, 3).repeat(num_images, 1),
             near_plane=near_plane,
             far_plane=far_plane,
-            #packed=False,  # TODO remove this once gsplat fixes assertion bug on backgrounds
+            # packed=False,  # TODO remove this once gsplat fixes assertion bug on backgrounds
             **kwargs,
         )
 
