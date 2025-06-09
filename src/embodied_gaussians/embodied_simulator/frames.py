@@ -17,7 +17,7 @@ class Frames:
     X_WCs_cpu: torch.Tensor
     X_CWs_opencv_gpu: torch.Tensor
     colors_gpu: torch.Tensor  # float32, [h, w, 3] [0, 1] RGB
-    depths_gpu: torch.Tensor  # float32, [h, w] 
+    depths_gpu: torch.Tensor  # float32, [h, w]
     device: str = "cuda"
 
     """

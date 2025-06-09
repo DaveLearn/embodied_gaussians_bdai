@@ -255,9 +255,9 @@ class EmbodiedViewer(SimulationViewer):
 
     @override
     def reset_camera(self):
-        self._camera_pos = PyVec3(0.0, -0.8, 0.4)
-        self._camera_front = PyVec3(0.0, 1.0, 0.0)
-        self._camera_up = PyVec3(0.0, 0.0, 1.0)
+        self._camera_pos = PyVec3(0.0, -0.8, 0.4)  # type: ignore
+        self._camera_front = PyVec3(0.0, 1.0, 0.0)  # type: ignore
+        self._camera_up = PyVec3(0.0, 0.0, 1.0)  # type: ignore
         self._render_new_frame = True
         self.update_view_matrix()
         self.update_projection_matrix()
