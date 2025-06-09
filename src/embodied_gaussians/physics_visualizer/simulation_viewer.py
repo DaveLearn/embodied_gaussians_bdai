@@ -91,6 +91,8 @@ class SimulationViewer(marsoom.Viewer3D):
     def _refresh_body_q(self):
         assert self.simulator is not None
         body_q = self.simulator.state_0.body_q
+        if body_q is None:
+            return
         assert body_q is not None
         wp.launch(
             kernel=transform_to_env_state_kernel,
