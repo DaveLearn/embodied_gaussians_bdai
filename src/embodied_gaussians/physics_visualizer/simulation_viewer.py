@@ -53,6 +53,10 @@ class SimulationViewer(marsoom.Viewer3D):
                 wp.to_torch(self.simulator.state_0.body_q)[self.body_id] = torch.tensor(T_EO).cuda()
 
     def keyboard(self):
+        
+        if not imgui.is_window_hovered():
+            return
+        
         if imgui.is_key_pressed(imgui.Key.m):
             self.enable_manipulate = not self.enable_manipulate
         if imgui.is_key_pressed(imgui.Key.g):
