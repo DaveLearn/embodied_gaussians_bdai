@@ -26,11 +26,11 @@ class Frames:
 
     def update_colors(self, name: str, timestamp: float, color: torch.Tensor, depth: Optional[torch.Tensor] = None) -> None:
         index = self.names.index(name)
-        assert color.shape == (self.height, self.width, 3)
+        assert color.shape == (self.height, self.width, 3), f"Color shape is {color.shape} but expected {self.height, self.width, 3}"
         self.timestamps[index] = timestamp
         self.colors_gpu[index].copy_(color)
         if depth is not None:
-            assert depth.shape == (self.height, self.width)
+            assert depth.shape == (self.height, self.width), f"Depth shape is {depth.shape} but expected {self.height, self.width}"
             self.depths_gpu[index].copy_(depth)
 
 

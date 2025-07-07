@@ -41,7 +41,7 @@ class SimulationViewer(marsoom.Viewer3D):
             return
 
         self.keyboard()
-        if self.enable_manipulate:
+        if self.enable_manipulate and self.bodies_per_env > 0:
             env_id = self.body_id // self.bodies_per_env
             X_WO = transform_to_matrix(wp.to_torch(self.render_state.body_q)[self.body_id].detach().cpu().numpy())
             guizmo.set_id(100)
