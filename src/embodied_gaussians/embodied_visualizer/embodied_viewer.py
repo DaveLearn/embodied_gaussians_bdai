@@ -42,12 +42,14 @@ class VisualizerSettings:
     far_plane: float = 10.0
     wireframe_alpha: float = 0.5
     wireframe_z_offset: float = 0.1
+    render_depth: bool = False
 
 
 class CameraWireframeWithImageAndTimestamp(marsoom.CameraWireframeWithImage):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.timestamp = -1.0
+        self.show_depth = False
 
 
 class EmbodiedViewer(SimulationViewer):
@@ -285,10 +287,16 @@ class EmbodiedViewer(SimulationViewer):
                 )
                 self.cameras[name].matrix = pyglet.math.Mat4(frames.X_WCs_cpu[i].T.flatten().numpy())
                 self.cameras[name].timestamp = -1.0
+                self.cameras[name].show_depth = self.settings.render_depth
             camera = self.cameras[name]
-            if camera.timestamp != frames.timestamps[i]:
-                camera.update_image(frames.colors_gpu[i])
+            if (camera.timestamp != frames.timestamps[i]) or (camera.show_depth != self.settings.render_depth):
+                if self.settings.render_depth:
+                    camera.update_image(depth_to_color(frames.depths_gpu[i]))
+                else:
+                    camera.update_image(frames.colors_gpu[i])
                 camera.timestamp = frames.timestamps[i]
+                camera.show_depth = self.settings.render_depth
+                
         self.batch_cameras.draw()
         gl.glEnable(gl.GL_DEPTH_TEST)
 
@@ -424,6 +432,7 @@ class EmbodiedViewer(SimulationViewer):
             background=torch.tensor([1.0, 1.0, 1.0]).cuda().unsqueeze(0),
             near_plane=s.near_plane,
             far_plane=s.far_plane,
+            render_mode="RGB+ED"
         )
 
         ids = meta["gaussian_ids"]
@@ -449,7 +458,12 @@ class EmbodiedViewer(SimulationViewer):
                 )
                 self.ellipse_renderer.draw(3.0)
             if s.draw_gaussian_render:
-                self.gaussian_texture.copy_from_device(render_colors.squeeze(0))
+                if s.render_depth:
+                    render_colors = depth_to_color(render_colors.squeeze(0)[:, :, 3])
+                else:
+                    render_colors = render_colors.squeeze(0)[:,:,:3].contiguous()
+                
+                self.gaussian_texture.copy_from_device(render_colors)
                 self.gaussian_overlay.draw()
 
     def render(self):
@@ -491,3 +505,15 @@ def transform_gaussian_to_env_state_kernel(
 ):
     env_id, tid = wp.tid()  # type: ignore
     out_means[env_id, tid] = wp.transform_point(T_WE[env_id], means[env_id, tid])
+
+
+def depth_to_color(depth: torch.Tensor) -> torch.Tensor:
+    min_depth = 0.2
+    max_depth = 2.0
+    depth_clamped = torch.clamp(depth, min_depth, max_depth)
+    depth_norm = (depth_clamped - min_depth) / (max_depth - min_depth)
+    x = depth_norm * 4.0  # Scale to [0, 4]
+    r = torch.clamp(torch.min(x - 1.5, 4.5 - x), 0, 1)
+    g = torch.clamp(torch.min(x - 0.5, 3.5 - x), 0, 1)
+    b = torch.clamp(torch.min(x + 0.5, 2.5 - x), 0, 1)
+    return torch.stack([r, g, b], dim=2).contiguous()

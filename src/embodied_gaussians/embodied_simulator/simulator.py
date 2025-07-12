@@ -266,8 +266,13 @@ def render_gaussians(
         )
 
         # todo: replace with backgrounds above when gsplat fixes assertion bug on packed rasterization
-        backgrounds = background.reshape(1, 3).repeat(num_images, 1)
-        render_colors = render_colors + backgrounds * (1 - render_alphas)
+        if "RGB" in render_mode:
+            backgrounds = background.reshape(1, 3).repeat(num_images, 1)
+            if "D" in render_mode:
+                # add a 0 to the 4th channel
+                backgrounds = torch.cat([backgrounds, torch.zeros_like(backgrounds[:, :1])], dim=1)
+        
+            render_colors = render_colors + backgrounds * (1 - render_alphas)
 
     return render_colors, render_alphas, info
 
