@@ -1,6 +1,6 @@
 # Copyright (c) 2025 Boston Dynamics AI Institute LLC. All rights reserved.
 
-from typing import Literal, Tuple, Dict, Any
+from typing import Literal, Optional, Tuple, Dict, Any
 import pysegreduce  # type: ignore
 from dataclasses import dataclass
 import torch
@@ -20,6 +20,7 @@ from embodied_gaussians.embodied_simulator.warp import (
     update_gaussians_transforms_kernel,
     update_visual_forces_kernel,
 )
+import open3d as o3d
 
 
 @dataclass
@@ -46,6 +47,12 @@ class EmbodiedGaussiansSimulator(Simulator[EmbodiedGaussiansBuilder]):
             bodies_affected_by_visual_forces=self.bodies_affected_by_visual_forces,
         )
         self.appearance_optimizer = AppearanceOptimizer(self.gaussian_state)
+        self.sync_confidence = 1.0
+        self.max_outlier_fraction = 0.0
+        self.frame_outlier_fractions = []
+        self.frame_noise_thresholds = []
+        self.frame_outlier_thresholds = []
+        self.workspace_bounding_box: Optional[o3d.t.geometry.AxisAlignedBoundingBox] = None
 
     def get_specific_environment_state(self, env_ind: int) -> EmbodiedGaussianState:
         with torch.no_grad():
@@ -230,6 +237,113 @@ class EmbodiedGaussiansSimulator(Simulator[EmbodiedGaussiansBuilder]):
                 self.state_0.body_f,
             ],
         )
+
+    # returns the gaussian depth for each frame
+    def compute_frames_expected_depths(self, frames: Frames) -> torch.Tensor:
+        # render the expected depth from the gaussians we get [N, H, W, 1]
+        render_depths, render_alphas, info = rasterization(
+                means=self.gaussian_model.means,
+                quats=self.gaussian_model.quats,
+                scales=self.gaussian_model.scales,
+                colors=self.gaussian_model.colors,
+                opacities=self.gaussian_model.opacities,
+                viewmats=frames.X_CWs_opencv_gpu,
+                Ks=frames.Ks_gpu,
+                width=int(frames.width),
+                height=int(frames.height),
+                camera_model="pinhole",
+                render_mode="ED"
+            )
+        return render_depths.squeeze(-1)
+       
+
+    # returns the depth error between the gaussian depth and the frame depth per pixel/frame
+    # only considers depth pixels which are present in both, returns depth error and valid mask
+    def compute_frame_depth_error(self, frames: Frames, max_depth: float = 2.0) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+        max_depth_error = 0.4 # bleed off workspace
+        # get the frame depth
+        frame_depths = frames.depths_gpu
+        # get the gaussian depth
+        gaussian_depths = self.compute_frames_expected_depths(frames)
+        # compute the depth disparity
+        depth_error = torch.abs(frame_depths - gaussian_depths)
+
+        valid_gaussian_mask = (gaussian_depths > 0.01)
+        valid_mask = valid_gaussian_mask & (frame_depths > 0.01) & (frame_depths < max_depth) & (depth_error < max_depth_error)
+
+        return depth_error, valid_mask, valid_gaussian_mask
+
+
+    def compute_frame_depth_outliers(self, frames: Frames, max_depth: float = 2.0) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
+        noise_percentile = 0.5 # median
+        outlier_threshold_multiplier = 2.0
+        
+        depth_errors, valid_masks, valid_gaussian_masks = self.compute_frame_depth_error(frames, max_depth)
+        
+        # for each frame calc the threshold for outliers based on noise percentile
+        outliers = torch.zeros_like(depth_errors, dtype=torch.int)
+        frame_noise_thresholds = []
+        frame_outlier_thresholds = []
+        for i, (residuals,valid_mask) in enumerate(zip(depth_errors,valid_masks)):
+            residuals = residuals[valid_mask].flatten() # ignore 0s as this are invalid pixels
+            sorted_residuals, _ = torch.sort(residuals)
+            noise_threshold = 0.01  # sorted_residuals[int(noise_percentile * sorted_residuals.numel())]
+            outlier_threshold = noise_threshold * outlier_threshold_multiplier
+            frame_noise_thresholds.append(noise_threshold)
+            frame_outlier_thresholds.append(outlier_threshold)
+            
+            outliers[i,valid_mask] = (residuals > outlier_threshold).int()
+        
+        self.frame_noise_thresholds = frame_noise_thresholds
+        self.frame_outlier_thresholds = frame_outlier_thresholds
+
+        return outliers, depth_errors, valid_masks, valid_gaussian_masks   
+
+    def compute_depth_outlier_fraction(self, frames: Frames) -> float:
+       
+
+        outliers,depth_errors, valid_masks, valid_gaussian_masks = self.compute_frame_depth_outliers(frames) # [N, H, W]
+       
+        outlier_fractions = []
+        for outlier, valid_mask in zip(outliers,valid_masks):
+            outlier_fractions.append(outlier[valid_mask].float().sum() / valid_gaussian_masks.float().sum())
+        
+        self.frame_outlier_fractions = outlier_fractions
+        # since some frames might not be observing the object, we instead just take the max outlier fraction across all frames
+        max_outlier_fraction = max(outlier_fractions)
+        return max_outlier_fraction
+
+    def compute_sync_confidence(self, frames: Frames) -> float:
+        max_outlier_fraction = 0.01  # TODO: this should be based on physical area represented by cluster of outliers
+        # get the depth outlier fraction
+        depth_outlier_fraction = self.compute_depth_outlier_fraction(frames)
+        self.max_outlier_fraction = depth_outlier_fraction
+        # compute the sync confidence
+        sync_confidence = 1.0 - min(depth_outlier_fraction/max_outlier_fraction, 1.0)
+        self.sync_confidence = sync_confidence
+        return sync_confidence    
+ 
+    @torch.no_grad()
+    def set_workspace_bounding_box_from_gaussians(self) -> None:
+        import torch.utils.dlpack
+        
+        # get the ground plane normal
+        ground_plane = wp.to_torch(self.model.ground_plane)
+        ground_plane_normal = ground_plane[:3]
+
+        # get the gaussian means
+        table = self.gaussian_model.means[self.gaussian_model.body_ids < 0] # the table is the only non physical body
+        roof = table.clone() + ground_plane_normal * 1.0 # one meter up
+
+        points = torch.cat([table, roof], dim=0)
+
+        points_o3d = o3d.core.Tensor.from_dlpack(points)
+
+        # compute the bounding box
+        bbox = o3d.t.geometry.AxisAlignedBoundingBox.create_from_points(points_o3d)
+
+        self.workspace_bounding_box = bbox
+
 
 
 def render_gaussians(

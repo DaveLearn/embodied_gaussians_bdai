@@ -26,7 +26,7 @@ from embodied_gaussians.embodied_simulator.gaussians import GaussianModel, Gauss
 from embodied_gaussians.environments.environment import (
     EnvironmentActions,
 )
-
+from gsplat.rendering import rasterization
 
 @dataclass
 class EmbodiedGaussiansObservations(EnvironmentObservations):
@@ -96,6 +96,8 @@ class EmbodiedGaussiansEnvironment(Environment[EmbodiedGaussiansActions, Embodie
                 self.frames,
                 self.physics_settings.dt / self.physics_settings.substeps,
             )
+            self.sim.compute_sync_confidence(self.frames)
+
 
     def dt(self) -> float:
         return self.physics_settings.dt
@@ -178,3 +180,6 @@ class EmbodiedGaussiansEnvironment(Environment[EmbodiedGaussiansActions, Embodie
             self.step()
             for callback in callbacks:
                 callback()
+
+    
+
