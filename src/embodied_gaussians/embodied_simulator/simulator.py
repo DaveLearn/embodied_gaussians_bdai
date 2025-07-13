@@ -54,6 +54,7 @@ class EmbodiedGaussiansSimulator(Simulator[EmbodiedGaussiansBuilder]):
         self.frame_outlier_fractions = []
         self.frame_noise_thresholds = []
         self.frame_outlier_thresholds = []
+        self.frame_detection_scores = []
         self.workspace_bounding_box: Optional[o3d.t.geometry.AxisAlignedBoundingBox] = None
 
     def get_specific_environment_state(self, env_ind: int) -> EmbodiedGaussianState:
@@ -300,8 +301,8 @@ class EmbodiedGaussiansSimulator(Simulator[EmbodiedGaussiansBuilder]):
 
 
     def compute_frame_depth_outliers(self, frames: Frames, max_depth: float = 2.0) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
-        noise_percentile = 0.75 # median
-        outlier_threshold_multiplier = 3.0
+        noise_percentile = 0.75 
+        outlier_threshold_multiplier = 3.5
         
         depth_errors, valid_masks, valid_gaussian_masks = self.compute_frame_depth_error(frames, max_depth)
         
@@ -309,19 +310,36 @@ class EmbodiedGaussiansSimulator(Simulator[EmbodiedGaussiansBuilder]):
         outliers = torch.zeros_like(depth_errors, dtype=torch.int)
         frame_noise_thresholds = []
         frame_outlier_thresholds = []
+        frame_detection_scores = []
         for i, (residuals,valid_mask) in enumerate(zip(depth_errors,valid_masks)):
             residuals = residuals[valid_mask].flatten() # ignore 0s as this are invalid pixels
             sorted_residuals, _ = torch.sort(residuals)
             noise_threshold = sorted_residuals[int(noise_percentile * sorted_residuals.numel())]
-            outlier_threshold = noise_threshold * outlier_threshold_multiplier
-            frame_noise_thresholds.append(noise_threshold)
+
+            # noise estimation using MAD on stable regions
+            stable_mask = (residuals < noise_threshold)
+            stable_diffs = residuals[stable_mask]
+            mad = torch.median(torch.abs(stable_diffs - torch.median(stable_diffs)))
+            noise_robust = 1.4826 * mad # make equivalent to std
+
+            outlier_threshold = torch.maximum(noise_robust * outlier_threshold_multiplier, torch.tensor(0.025))
+            frame_noise_thresholds.append(noise_robust)
             frame_outlier_thresholds.append(outlier_threshold)
-            
+
+            # weighting
+            excess = torch.maximum(residuals - outlier_threshold, torch.zeros_like(residuals))
+            weights = excess / (excess + noise_robust)
+
+            weighted_excess = weights * excess
+            # normalize by expected number of valid pixels
+            detection_score = weighted_excess.sum() / stable_mask.sum()
+            frame_detection_scores.append(detection_score.item())
+
             outliers[i,valid_mask] = (residuals > outlier_threshold).int()
         
         self.frame_noise_thresholds = frame_noise_thresholds
         self.frame_outlier_thresholds = frame_outlier_thresholds
-
+        self.frame_detection_scores = frame_detection_scores
         return outliers, depth_errors, valid_masks, valid_gaussian_masks   
 
     def compute_depth_outlier_fraction(self, frames: Frames) -> float:
