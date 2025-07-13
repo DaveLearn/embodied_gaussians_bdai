@@ -115,3 +115,26 @@ def depth_to_points_3d_batch(depth_image: torch.Tensor, K: torch.Tensor, X_WC: t
     points_3d = torch.bmm(cam_coords_homo, X_WC.transpose(1, 2))[..., :3]  # (B, H*W, 3)
     
     return points_3d, uv_coords, valid
+
+
+def shrink_masks(masks, shrink_amount=4):
+    # Ensure mask is a float tensor
+    masks = masks.float()
+    
+    # Create a larger kernel - for shrinking by N pixels, use (2*N+1) x (2*N+1)
+    kernel_size = 2 * shrink_amount + 1
+    kernel = torch.ones(1, 1, kernel_size, kernel_size, device=masks.device)
+    padding = shrink_amount
+    
+    masks_4d = masks.unsqueeze(1)
+
+    # Perform convolution
+    shrunk = torch.nn.functional.conv2d(
+        masks_4d, kernel, padding=padding
+    )
+    
+    # Threshold - all pixels in the kernel must be 1
+    expected_sum = kernel_size * kernel_size
+    shrunk = (shrunk == expected_sum).squeeze(1)
+    
+    return shrunk

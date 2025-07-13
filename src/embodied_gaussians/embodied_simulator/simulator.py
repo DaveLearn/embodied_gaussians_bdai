@@ -1,6 +1,7 @@
 # Copyright (c) 2025 Boston Dynamics AI Institute LLC. All rights reserved.
 
 from typing import Literal, Optional, Tuple, Dict, Any
+from embodied_gaussians.utils.utils import shrink_masks
 import pysegreduce  # type: ignore
 from dataclasses import dataclass
 import torch
@@ -49,6 +50,7 @@ class EmbodiedGaussiansSimulator(Simulator[EmbodiedGaussiansBuilder]):
         self.appearance_optimizer = AppearanceOptimizer(self.gaussian_state)
         self.sync_confidence = 1.0
         self.max_outlier_fraction = 0.0
+        self.mean_outlier_fraction = 0.0
         self.frame_outlier_fractions = []
         self.frame_noise_thresholds = []
         self.frame_outlier_thresholds = []
@@ -252,7 +254,7 @@ class EmbodiedGaussiansSimulator(Simulator[EmbodiedGaussiansBuilder]):
                 width=int(frames.width),
                 height=int(frames.height),
                 camera_model="pinhole",
-                render_mode="ED"
+                render_mode="D"
             )
         return render_depths.squeeze(-1)
        
@@ -265,18 +267,41 @@ class EmbodiedGaussiansSimulator(Simulator[EmbodiedGaussiansBuilder]):
         frame_depths = frames.depths_gpu
         # get the gaussian depth
         gaussian_depths = self.compute_frames_expected_depths(frames)
-        # compute the depth disparity
-        depth_error = torch.abs(frame_depths - gaussian_depths)
-
         valid_gaussian_mask = (gaussian_depths > 0.01)
+        
+        # shrink the gaussian mask to account for gsplat tendancy to misalign
+        # we go for 5% of the image size
+        shrink_amount = int(0.05 * frames.width)
+        valid_gaussian_mask = shrink_masks(valid_gaussian_mask, shrink_amount=shrink_amount)
+
+
+        # align the gaussians with our depth sensor using median to account for noise
+        valid_median_mask = (valid_gaussian_mask) & (frame_depths > 0.01)
+        diffs = frame_depths - gaussian_depths
+
+        # Initialize offsets
+        offsets = torch.zeros(frame_depths.shape[0], device=frame_depths.device)
+        
+        # Compute median for each batch item
+        for i in range(frame_depths.shape[0]):
+            valid_pixels = diffs[i][valid_median_mask[i]]
+            if len(valid_pixels) > 0:
+                offsets[i] = torch.median(valid_pixels)
+
+        aligned_frame_depths = frame_depths - offsets.view(frame_depths.shape[0], 1, 1)
+
+        # compute the depth disparity
+        depth_error = torch.abs(aligned_frame_depths - gaussian_depths)
+
+        
         valid_mask = valid_gaussian_mask & (frame_depths > 0.01) & (frame_depths < max_depth) & (depth_error < max_depth_error)
 
         return depth_error, valid_mask, valid_gaussian_mask
 
 
     def compute_frame_depth_outliers(self, frames: Frames, max_depth: float = 2.0) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
-        noise_percentile = 0.5 # median
-        outlier_threshold_multiplier = 2.0
+        noise_percentile = 0.75 # median
+        outlier_threshold_multiplier = 3.0
         
         depth_errors, valid_masks, valid_gaussian_masks = self.compute_frame_depth_error(frames, max_depth)
         
@@ -287,7 +312,7 @@ class EmbodiedGaussiansSimulator(Simulator[EmbodiedGaussiansBuilder]):
         for i, (residuals,valid_mask) in enumerate(zip(depth_errors,valid_masks)):
             residuals = residuals[valid_mask].flatten() # ignore 0s as this are invalid pixels
             sorted_residuals, _ = torch.sort(residuals)
-            noise_threshold = 0.01  # sorted_residuals[int(noise_percentile * sorted_residuals.numel())]
+            noise_threshold = sorted_residuals[int(noise_percentile * sorted_residuals.numel())]
             outlier_threshold = noise_threshold * outlier_threshold_multiplier
             frame_noise_thresholds.append(noise_threshold)
             frame_outlier_thresholds.append(outlier_threshold)
@@ -302,11 +327,11 @@ class EmbodiedGaussiansSimulator(Simulator[EmbodiedGaussiansBuilder]):
     def compute_depth_outlier_fraction(self, frames: Frames) -> float:
        
 
-        outliers,depth_errors, valid_masks, valid_gaussian_masks = self.compute_frame_depth_outliers(frames) # [N, H, W]
+        outliers, depth_errors, valid_masks, valid_gaussian_masks = self.compute_frame_depth_outliers(frames) # [N, H, W]
        
         outlier_fractions = []
-        for outlier, valid_mask in zip(outliers,valid_masks):
-            outlier_fractions.append(outlier[valid_mask].float().sum() / valid_gaussian_masks.float().sum())
+        for outlier, valid_mask, valid_gaussian_mask in zip(outliers,valid_masks, valid_gaussian_masks):
+            outlier_fractions.append(outlier[valid_mask].float().sum() / valid_gaussian_mask.float().sum())
         
         self.frame_outlier_fractions = outlier_fractions
         # since some frames might not be observing the object, we instead just take the max outlier fraction across all frames
@@ -318,6 +343,7 @@ class EmbodiedGaussiansSimulator(Simulator[EmbodiedGaussiansBuilder]):
         # get the depth outlier fraction
         depth_outlier_fraction = self.compute_depth_outlier_fraction(frames)
         self.max_outlier_fraction = depth_outlier_fraction
+        self.mean_outlier_fraction = sum(self.frame_outlier_fractions) / len(self.frame_outlier_fractions)
         # compute the sync confidence
         sync_confidence = 1.0 - min(depth_outlier_fraction/max_outlier_fraction, 1.0)
         self.sync_confidence = sync_confidence
