@@ -16,11 +16,13 @@ class GroundFinderSettings:
     ymin: float = -1.0
     ymax: float = 1.0
 
-    plane_segment_distance_threshold: float = 0.01
+    plane_segment_distance_threshold: float = 0.001
     plane_segment_ransac_n: int = 3
     plane_segment_num_iterations: int = 1000
 
     max_depth: float = 10.0
+    # we calibrated camers with charcuo on the table so top of table should be offset 0
+    fix_offset_to_zero: bool = False
 
 
 @dataclass
@@ -95,6 +97,10 @@ class GroundFinder:
         # GET PLANE POINTCLOUD
         # ====================
         plane_model = np.array(plane_model)
+
+        if settings.fix_offset_to_zero:
+            plane_model[3] = 0.0
+
         points_per_cm = settings.points_per_cm
         xmin, xmax, ymin, ymax = (
             settings.xmin,
