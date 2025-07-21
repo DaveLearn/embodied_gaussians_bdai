@@ -1,6 +1,6 @@
 # Copyright (c) 2025 Boston Dynamics AI Institute LLC. All rights reserved.
 
-from typing import Literal, Optional, Tuple, Dict, Any
+from typing import List, Literal, Optional, Tuple, Dict, Any
 from embodied_gaussians.utils.utils import shrink_masks
 import pysegreduce  # type: ignore
 from dataclasses import dataclass
@@ -51,7 +51,10 @@ class EmbodiedGaussiansSimulator(Simulator[EmbodiedGaussiansBuilder]):
         self.sync_confidence = 1.0
         self.max_outlier_fraction = 0.0
         self.mean_outlier_fraction = 0.0
+        self.delta_fraction = 0.0
+        self.delta = 0.0
         self.frame_outlier_fractions = []
+        self.baseline_outlier_fractions = []
         self.color_outlier_fractions = []
         self.frame_noise_thresholds = []
         self.frame_outlier_thresholds = []
@@ -308,17 +311,13 @@ class EmbodiedGaussiansSimulator(Simulator[EmbodiedGaussiansBuilder]):
         return depth_error, valid_mask, valid_gaussian_mask, color_error
 
     @torch.no_grad()
-    def compute_frame_depth_outliers(self, frames: Frames, max_depth: float = 2.0) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
+    def compute_outlier_thresholds(self, depth_errors: torch.Tensor, valid_masks: torch.Tensor) -> List[float]:
         noise_percentile = 0.90 
         outlier_threshold_multiplier = 2.5
-        
-        depth_errors, valid_masks, valid_gaussian_masks, color_errors = self.compute_frame_depth_error(frames, max_depth)
-        
-        # for each frame calc the threshold for outliers based on noise percentile
-        outliers = torch.zeros_like(depth_errors, dtype=torch.int)
+
         frame_noise_thresholds = []
         frame_outlier_thresholds = []
-        frame_detection_scores = []
+        
         for i, (residuals,valid_mask) in enumerate(zip(depth_errors,valid_masks)):
             residuals = residuals[valid_mask].flatten() # ignore 0s as this are invalid pixels
             sorted_residuals, _ = torch.sort(residuals)
@@ -335,33 +334,41 @@ class EmbodiedGaussiansSimulator(Simulator[EmbodiedGaussiansBuilder]):
             frame_noise_thresholds.append(noise_threshold)
             frame_outlier_thresholds.append(outlier_threshold)
 
-            # weighting
-            #excess = torch.min(torch.maximum(residuals - outlier_threshold, torch.zeros_like(residuals)), torch.tensor(0.1, device=residuals.device))
-            #weights = excess / (excess + noise_robust)
-
-            #weighted_excess = weights * excess
-            # normalize by expected number of valid pixels
-            #detection_score = weighted_excess.sum() / stable_mask.sum()
-            #frame_detection_scores.append(detection_score.item())
-
-            outliers[i,valid_mask] = (residuals > outlier_threshold).int()
-        
         self.frame_noise_thresholds = frame_noise_thresholds
         self.frame_outlier_thresholds = frame_outlier_thresholds
-        self.frame_detection_scores = frame_detection_scores
+        return frame_outlier_thresholds
 
+
+    @torch.no_grad()
+    def compute_frame_depth_outliers(self, frames: Frames, max_depth: float = 2.0) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
+        
+        
+        depth_errors, valid_masks, valid_gaussian_masks, color_errors = self.compute_frame_depth_error(frames, max_depth)
+        
+        # for each frame calc the threshold for outliers based on noise percentile
+        if self.frame_outlier_thresholds is None or len(self.frame_outlier_thresholds) != depth_errors.shape[0]:
+            self.frame_outlier_thresholds = self.compute_outlier_thresholds(depth_errors, valid_masks)
+        
+        frame_outlier_thresholds = self.frame_outlier_thresholds
+        outliers = torch.zeros_like(depth_errors, dtype=torch.int)
+       
+        for i, (residuals, valid_mask, outlier_threshold) in enumerate(zip(depth_errors, valid_masks, frame_outlier_thresholds)):
+            outliers[i,valid_mask] = (residuals[valid_mask] > outlier_threshold).int()
+
+        
         color_outliers = torch.zeros_like(valid_gaussian_masks, dtype=torch.int)
-        for i, (color_error, valid_mask) in enumerate(zip(color_errors, valid_gaussian_masks)):
-            residuals = color_error[valid_mask].sum(dim=1)
-            sorted_residuals, _ = torch.sort(residuals)
-            noise_threshold = sorted_residuals[int(noise_percentile * sorted_residuals.numel())]
-            outlier_threshold = noise_threshold * outlier_threshold_multiplier
-            color_outliers[i,valid_mask] = (residuals > outlier_threshold).int()
+        #for i, (color_error, valid_mask) in enumerate(zip(color_errors, valid_gaussian_masks)):
+        #    residuals = color_error[valid_mask].sum(dim=1)
+        #    sorted_residuals, _ = torch.sort(residuals)
+        #    noise_threshold = sorted_residuals[int(noise_percentile * sorted_residuals.numel())]
+        #    outlier_threshold = noise_threshold * outlier_threshold_multiplier
+        #    color_outliers[i,valid_mask] = (residuals > outlier_threshold).int()
+
 
 
         return outliers, depth_errors, valid_masks, valid_gaussian_masks, color_outliers   
 
-    def compute_depth_outlier_fraction(self, frames: Frames) -> Tuple[float, float]:
+    def compute_depth_outlier_fraction(self, frames: Frames) -> Tuple[float, float, float]:
        
 
         outliers, depth_errors, valid_masks, valid_gaussian_masks, color_outliers = self.compute_frame_depth_outliers(frames) # [N, H, W]
@@ -372,22 +379,30 @@ class EmbodiedGaussiansSimulator(Simulator[EmbodiedGaussiansBuilder]):
             outlier_fractions.append((outlier[valid_mask].float().sum() / valid_gaussian_mask.float().sum()).item())
             color_outlier_fractions.append((color_outlier[valid_mask].float().sum() / valid_gaussian_mask.float().sum()).item())
         
+        if self.baseline_outlier_fractions is None or len(self.baseline_outlier_fractions) != depth_errors.shape[0]:
+            self.baseline_outlier_fractions = outlier_fractions.copy()
+
+
         self.frame_outlier_fractions = outlier_fractions
         self.color_outlier_fractions = color_outlier_fractions
         # since some frames might not be observing the object, we instead just take the max outlier fraction across all frames
         max_outlier_fraction = max(outlier_fractions)
         max_color_outlier_fraction = max(color_outlier_fractions)
-        return max_outlier_fraction, max_color_outlier_fraction
+        delta = sum(outlier_fractions) - sum(self.baseline_outlier_fractions)
+        delta_fraction = delta / sum(self.baseline_outlier_fractions)
+        self.delta = delta
+        return max_outlier_fraction, max_color_outlier_fraction, delta_fraction
 
     def compute_sync_confidence(self, frames: Frames) -> float:
         max_outlier_fraction = 0.01  # TODO: this should be based on physical area represented by cluster of outliers
         # get the depth outlier fraction
-        depth_outlier_fraction, color_outlier_fraction = self.compute_depth_outlier_fraction(frames)
+        depth_outlier_fraction, color_outlier_fraction, delta_fraction = self.compute_depth_outlier_fraction(frames)
         self.max_outlier_fraction = depth_outlier_fraction
         self.mean_outlier_fraction = sum(self.frame_outlier_fractions) / len(self.frame_outlier_fractions)
         # compute the sync confidence
         sync_confidence = 1.0 - min(depth_outlier_fraction/max_outlier_fraction, 1.0)
         self.sync_confidence = sync_confidence
+        self.delta_fraction = delta_fraction
         return sync_confidence    
  
     @torch.no_grad()
