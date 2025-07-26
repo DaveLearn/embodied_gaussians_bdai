@@ -179,8 +179,8 @@ class SimpleBodyBuilder:
     ) -> o3d.geometry.OrientedBoundingBox | None:
         cl, ind = pc.remove_radius_outlier(nb_points=outlier_nb_points, radius=outlier_radius)
         pc = pc.select_by_index(ind)
-        if len(pc.points) == 0:
-            logger.warning("Could not find bounding box because no points left after outlier removal")
+        if len(pc.points) < 10:
+            logger.warning("Could not find bounding box because not enough points left after outlier removal")
             return None
 
         obb = pc.get_minimal_oriented_bounding_box()
