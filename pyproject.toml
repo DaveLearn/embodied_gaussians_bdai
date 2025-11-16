@@ -17,10 +17,10 @@ dependencies=[
     "glfw>=2.8.0,<3",
     "pytest",
     "open3d>=0.18.0,<0.19.0",
-    "marsoom @ git+https://github.com/jc211/marsoom.git",
+    "marsoom @ git+https://github.com/jc211/marsoom.git@febe61df91a75df10063bfb420e9e68a9a8cd6a9",
 
     "torchcodec==0.1.1",
-    "realsense @ git+https://github.com/davelearn/realsense.git#b3cc6bae06bfac0f8719ac95a7511815dac1213d",
+    "realsense @ git+https://github.com/davelearn/realsense.git@b3cc6bae06bfac0f8719ac95a7511815dac1213d",
 
     "isegm @ git+https://github.com/jc211/ritm_interactive_segmentation", 
 
