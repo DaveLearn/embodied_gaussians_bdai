@@ -12,6 +12,49 @@ from embodied_gaussians.physics_simulator.simulator import Simulator
 from embodied_gaussians.utils.utils import GridBuilder
 from embodied_gaussians.utils.physics_utils import transform_from_matrix, transform_to_matrix
 
+PASTEL_COLORS = [
+    [0.984375, 0.7265625, 0.0703125],
+    [0.7265625, 0.23046875, 0.23046875],
+    [0.23046875, 0.7265625, 0.23046875],
+    [0.23046875, 0.23046875, 0.7265625],
+    [0.7265625, 0.23046875, 0.7265625],
+    [0.23046875, 0.7265625, 0.7265625],
+    [0.7265625, 0.7265625, 0.23046875],
+    [0.7265625, 0.7265625, 0.7265625],
+]
+
+
+class BodyColorSimGLRenderer(marsoom.cuda.OpenGLRendererWrapper):
+    bodies: list[str]
+    
+    def __init__(self, path, scaling=1.0, fps=60.0, up_axis=(0.0, 0.0, 1.0)):
+        super().__init__(path, scaling, fps, up_axis)
+        self.bodies = []
+
+    def add_shape_instance(
+        self,
+        name: str,
+        shape: int,
+        body,
+        pos: tuple,
+        rot: tuple,
+        scale: tuple = (1.0, 1.0, 1.0),
+        color1=None,
+        color2=None,
+        custom_index: int = -1,
+        visible: bool = True,
+    ):
+
+        if color1 is None and body != -1: # ground is -1
+            if body not in self.bodies:
+                self.bodies.append(body)
+    
+            bid = self.bodies.index(body)
+            color1 = PASTEL_COLORS[bid % len(PASTEL_COLORS)]
+            color2 = color1
+        return super().add_shape_instance(name, shape, body, pos, rot, scale, color1, color2, custom_index, visible)
+        
+
 
 class SimulationViewer(marsoom.Viewer3D):
     def __init__(self, window, show_origin: bool = True):
@@ -23,7 +66,7 @@ class SimulationViewer(marsoom.Viewer3D):
 
     def set_simulator(self, simulator: Simulator):
         self.simulator = simulator
-        self.sim_renderer = warp.sim.render.CreateSimRenderer(marsoom.cuda.OpenGLRendererWrapper)(self.simulator.model, 0)
+        self.sim_renderer = warp.sim.render.CreateSimRenderer(BodyColorSimGLRenderer)(self.simulator.model, 0)
         self.render_state = self.simulator.model.state()
         self.num_bodies = self.simulator.model.body_count
         self.body_id = 0
