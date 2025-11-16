@@ -114,6 +114,10 @@ class EmbodiedViewer(SimulationViewer):
         _, s.draw_cameras = imgui.checkbox("Show Cameras", s.draw_cameras)
         _, s.draw_virtual_cameras = imgui.checkbox("Show Virtual Cameras", s.draw_virtual_cameras)
 
+        c, s.gaussian_render_alpha = imgui.slider_float("Gaussian Opacity", s.gaussian_render_alpha, 0.0, 1.0)
+        if c:
+            self.gaussian_overlay.alpha = s.gaussian_render_alpha
+
         imgui.spacing()
         imgui.spacing()
 
