@@ -23,6 +23,7 @@ class GroundFinderSettings:
     max_depth: float = 10.0
     # we calibrated camers with charcuo on the table so top of table should be offset 0
     fix_offset_to_zero: bool = False
+    use_instance_masks_for_plane_points: bool = False
 
 
 @dataclass
@@ -121,13 +122,58 @@ class GroundFinder:
         # ====================
         # CROP PLANE POINTCLOUD
         # ====================
-        kdtree = o3d.geometry.KDTreeFlann(inlier_cloud)
+        if settings.use_instance_masks_for_plane_points:
+            mask_points = []
+            for datapoint in datapoints:
+                if datapoint.mask is None:
+                    continue
+
+                mask = datapoint.mask != 0
+                ys, xs = np.nonzero(mask)
+                if ys.size == 0:
+                    continue
+
+                fx, fy = datapoint.K[0, 0], datapoint.K[1, 1]
+                cx, cy = datapoint.K[0, 2], datapoint.K[1, 2]
+                x = (xs - cx) / fx
+                y = (ys - cy) / fy
+                dirs_cam = np.stack([x, y, np.ones_like(x)], axis=1)
+
+                X_WC = datapoint.get_X_WC("opencv")
+                R = X_WC[:3, :3]
+                C = X_WC[:3, 3]
+                dirs_world = (R @ dirs_cam.T).T
+
+                denom = plane_model[:3] @ dirs_world.T
+                valid = np.abs(denom) > 1e-8
+                t = -(plane_model[:3] @ C + plane_model[3]) / denom
+                valid = valid & (t > 0.0)
+                if settings.max_depth > 0.0:
+                    valid = valid & (t <= settings.max_depth)
+
+                if not np.any(valid):
+                    continue
+
+                points = C + dirs_world * t[:, None]
+                mask_points.append(points[valid])
+
+            if mask_points:
+                mask_points = np.concatenate(mask_points, axis=0)
+            else:
+                mask_points = np.empty((0, 3), dtype=np.float64)
+
+            inlier_cloud = o3d.geometry.PointCloud(o3d.utility.Vector3dVector(mask_points))
+            inlier_cloud = inlier_cloud.voxel_down_sample(voxel_size=0.001)
+
         final_points = []
-        for p in plane_points.points:
-            [k, idx, _] = kdtree.search_radius_vector_3d(p, 0.01)
-            if k >= 1:
-                final_points.append(p)
+        if len(inlier_cloud.points) > 0:
+            kdtree = o3d.geometry.KDTreeFlann(inlier_cloud)
+            for p in plane_points.points:
+                [k, _, _] = kdtree.search_radius_vector_3d(p, 0.01)
+                if k >= 1:
+                    final_points.append(p)
         final_points = np.array(final_points)
+
         print(f"Found {len(final_points)} points on the ground")
         plane_points = o3d.geometry.PointCloud(o3d.utility.Vector3dVector(final_points))
 
