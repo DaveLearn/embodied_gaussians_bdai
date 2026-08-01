@@ -53,7 +53,7 @@ embodied-gaussians = { path = ".", editable = true }
 default = { features = ["build", "test"], solve-group = "default" }
 
 [tool.pixi.tasks]
-build-gsplat = { cmd = "pip install git+https://github.com/nerfstudio-project/gsplat.git@d23d7ca5dd26c3756967304b621ae88521672ed5 --no-build-isolation", env = { TORCH_CUDA_ARCH_LIST = "native" } }
+build-gsplat = "python scripts/build_gsplat.py"
 build-pysegreduce = { cmd = "pip install git+https://github.com/jc211/pysegreduce.git@67fde3df40c6220ed5a0ad38eac2caabf019e0c9 --no-build-isolation", env = { CUDAARCHS = "native" } }
 build = { depends-on = ["build-gsplat", "build-pysegreduce"] }
 test = "pytest"
