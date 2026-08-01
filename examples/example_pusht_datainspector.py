@@ -15,31 +15,32 @@ from embodied_gaussians.physics_simulator.loader import Loader
 from sim_environments.pusht import PushTEnvironment
 from embodied_gaussians.vis import SimulationViewer
 
+
 @dataclass
 class Settings:
     path: tyro.conf.PositionalRequiredArgs[Path]
     """Path to the data directory"""
 
+
 class InspectGUI(marsoom.Window):
     def __init__(self, settings: Settings):
         super().__init__(caption="Inspector")
         self.settings = settings
-        
+
         # Initialize environment and viewers
         self.pusht_env = PushTEnvironment.build()
         self.loader = Loader(device="cuda")
         self.sim_renderer = SimulationViewer(self)
         self.sim_renderer.set_simulator(self.pusht_env.simulator())
-        
+
         # State tracking
         self.time_index = 0
         self.playing = False
         self.play_nursery = None
         self.nursery = None
-        
+
         # Load first demo
-        self.demo_paths = sorted([d for d in self.settings.path.iterdir() if d.is_dir()], 
-                               key=lambda x: int(x.name))
+        self.demo_paths = sorted([d for d in self.settings.path.iterdir() if d.is_dir()], key=lambda x: int(x.name))
         self.demo_number = 0
         if self.demo_paths:
             self.load_demo(0)
@@ -93,20 +94,18 @@ class InspectGUI(marsoom.Window):
 
     def render(self):
         self.keyboard()
-        
+
         # Main control window with better styling
         imgui.set_next_window_size((400, 300), cond=imgui.Cond_.first_use_ever)
         imgui.begin("Control Panel", flags=imgui.WindowFlags_.no_collapse)
-        
+
         # Status information
         imgui.push_style_color(imgui.Col_.frame_bg, imgui.ImVec4(0.2, 0.2, 0.2, 1.0))
         imgui.begin_child("Status", (0, 100), True)
         imgui.text("Playback Controls")
         imgui.separator()
-        
-        c, self.time_index = imgui.slider_int(
-            "Time", self.time_index, 0, self.loader.num_steps - 1
-        )
+
+        c, self.time_index = imgui.slider_int("Time", self.time_index, 0, self.loader.num_steps - 1)
         if c:
             self.time_index = min(max(0, self.time_index), self.loader.num_steps - 1)
             self.go_to_index(self.time_index)
@@ -122,7 +121,7 @@ class InspectGUI(marsoom.Window):
             if imgui.button("Stop", button_size):
                 self.stop_playing()
             imgui.pop_style_color()
-            
+
         imgui.end_child()
         imgui.pop_style_color()
 
@@ -139,7 +138,7 @@ class InspectGUI(marsoom.Window):
             if clicked and not selected:
                 self.load_demo(i)
         imgui.end_child()
-        
+
         imgui.end()
 
         # 3D Viewer
@@ -149,11 +148,13 @@ class InspectGUI(marsoom.Window):
         self.sim_renderer.process_nav()
         imgui.end()
 
+
 async def main():
     wp.init()
     settings = tyro.cli(Settings)
     window = InspectGUI(settings)
     await window.run()
+
 
 if __name__ == "__main__":
     trio.run(main)

@@ -54,10 +54,8 @@ class EmbodiedGaussiansSimulator(Simulator):
             g = sim.gaussian_state.reshape((self.num_envs(), -1, 7)).slice(env_ind).clone()
             s = wp.from_torch(s)
             c = wp.from_torch(c)
-            return EmbodiedGaussianState(
-                physics_state=s, physics_control=c, gaussian_state=g
-            )
-    
+            return EmbodiedGaussianState(physics_state=s, physics_control=c, gaussian_state=g)
+
     def set_specific_environment_state(self, env_ind: int, state: EmbodiedGaussianState):
         sim = self
         with torch.no_grad():
@@ -70,17 +68,13 @@ class EmbodiedGaussiansSimulator(Simulator):
         s = self.state_0
         c = self.control
         g = self.gaussian_state.clone()
-        return EmbodiedGaussianState(
-            physics_state=s, physics_control=c, gaussian_state=g
-        )
+        return EmbodiedGaussianState(physics_state=s, physics_control=c, gaussian_state=g)
 
     def clone_embodied_gaussian_state(self):
         s = self.clone_state()
         c = self.clone_control()
         g = self.gaussian_state.clone()
-        return EmbodiedGaussianState(
-            physics_state=s, physics_control=c, gaussian_state=g
-        )
+        return EmbodiedGaussianState(physics_state=s, physics_control=c, gaussian_state=g)
 
     def copy_embodied_gaussian_state(self, state: EmbodiedGaussianState):
         self.set_state(state.physics_state)
@@ -139,28 +133,20 @@ class EmbodiedGaussiansSimulator(Simulator):
             **kwargs,
         )
 
-    def compute_visual_forces(
-        self, settings: VisualForcesSettings, frames: Frames, dt: float
-    ):
+    def compute_visual_forces(self, settings: VisualForcesSettings, frames: Frames, dt: float):
         self._compute_visual_forces(settings, frames, dt)
 
     def update_gaussian_transforms(self):
-        update_gaussian_transforms(
-            self.gaussian_model, self.state_0.body_q, self.gaussian_state
-        )
+        update_gaussian_transforms(self.gaussian_model, self.state_0.body_q, self.gaussian_state)
 
-    def _compute_visual_forces(
-        self, settings: VisualForcesSettings, frames: Frames, dt: float
-    ):
+    def _compute_visual_forces(self, settings: VisualForcesSettings, frames: Frames, dt: float):
         with torch.no_grad():
             self.visual_forces.means.copy_(self.gaussian_state.means)
             self.visual_forces.quats.copy_(self.gaussian_state.quats)
 
         # self.visual_forces.optimizer.reset_internal_state()
         self.visual_forces.set_learnings_rates([settings.lr_means, settings.lr_quats])
-        self.appearance_optimizer.set_learnings_rates(
-            [settings.lr_color, settings.lr_opacity, settings.lr_scale]
-        )
+        self.appearance_optimizer.set_learnings_rates([settings.lr_color, settings.lr_opacity, settings.lr_scale])
 
         for _ in range(settings.iterations):
             render_colors, render_alphas, info = rasterization(
@@ -272,9 +258,7 @@ def update_gaussian_transforms(model: GaussianModel, body_q, out_state: Gaussian
     )
 
 
-def copy_embodied_gaussian_state(
-    dest: EmbodiedGaussianState, src: EmbodiedGaussianState
-):
+def copy_embodied_gaussian_state(dest: EmbodiedGaussianState, src: EmbodiedGaussianState):
     copy_state(dest.physics_state, src.physics_state)
     copy_control(dest.physics_control, src.physics_control)
     dest.gaussian_state.copy(src.gaussian_state)

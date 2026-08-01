@@ -58,7 +58,7 @@ class EmbodiedGaussiansEnvironment(Environment):
         super().__init__()
         self.streams = [torch.cuda.Stream() for _ in range(self.num_envs())]
         self.stash_state()
-    
+
     def stash_state(self):
         self.stashed_state = self.sim.clone_embodied_gaussian_state()
 
@@ -146,10 +146,11 @@ class EmbodiedGaussiansEnvironment(Environment):
             b.joint_q = self.sim.state_0.joint_q.numpy().tolist()
         if b.particle_count > 0:
             b.particle_q = self.sim.state_0.particle_q.numpy().tolist()
-        
+
         if b.num_gaussians() > 0:
             with torch.no_grad():
-                # b.gaussian_means = self.sim.gaussian_state.means.cpu().numpy().tolist() # Do not add these to the builder, the builder takes in X_OG, this is X_WG (gaussian relative to the object vs world)
+                # Do not add means to the builder: it expects X_OG, while this is X_WG
+                # (the Gaussian pose relative to the object versus the world).
                 # b.gaussian_quats = self.sim.gaussian_state.quats.cpu().numpy().tolist() # Do not add these to the builder
                 b.gaussian_scales = self.sim.gaussian_state.scales.cpu().numpy().tolist()
                 b.gaussian_opacities = self.sim.gaussian_state.opacities.cpu().numpy().tolist()
@@ -166,9 +167,7 @@ class EmbodiedGaussiansEnvironment(Environment):
         c = self.virtual_cameras
         return c.render(self.time(), self.sim.gaussian_state)
 
-    async def run_with_clock(
-        self, clock: trio.testing.MockClock, callbacks: list[Callable] = []
-    ):
+    async def run_with_clock(self, clock: trio.testing.MockClock, callbacks: list[Callable] = []):
         async for _ in periodic(self.dt()):
             self.step()
             for callback in callbacks:

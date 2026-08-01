@@ -30,9 +30,7 @@ class PhysicsSettings:
 
 
 class Simulator:
-    def __init__(
-        self, builder: ModelBuilder, device: str = "cuda", requires_grad: bool = False
-    ):
+    def __init__(self, builder: ModelBuilder, device: str = "cuda", requires_grad: bool = False):
         self.builder = builder
         self.device = device
         self.model = builder.finalize(device, requires_grad)
@@ -83,9 +81,7 @@ class Simulator:
 
     def eval_ik(self):
         if self.model.joint_count > 0:
-            warp.sim.eval_ik(
-                self.model, self.state_0, self.state_0.joint_q, self.state_0.joint_qd
-            )
+            warp.sim.eval_ik(self.model, self.state_0, self.state_0.joint_q, self.state_0.joint_qd)
 
     def set_body_q(self, body_id: int, X_WO: np.ndarray):
         s = wp.to_torch(self.state_0.body_q)
@@ -101,13 +97,13 @@ class Simulator:
         joint_start = self.builder.articulation_start[index]
         joint_q = wp.to_torch(self.state_0.joint_q)
         return joint_q[joint_start : joint_start + num_joints]
-    
+
     def get_articulation_qd(self, index: int, num_joints: int):
         assert index < self.builder.articulation_count
         joint_start = self.builder.articulation_start[index]
         joint_qd = wp.to_torch(self.state_0.joint_qd)
         return joint_qd[joint_start : joint_start + num_joints]
-    
+
     def check_articulation_healthy(self, index: int):
         assert index < self.builder.articulation_count
         joint_qd = wp.to_torch(self.state_0.joint_qd)
@@ -116,7 +112,7 @@ class Simulator:
     def set_articulation_q(self, index: int, q: torch.Tensor):
         assert index < self.builder.articulation_count
         if q.ndim == 1:
-            q = q.unsqueeze(0) # replicate q for all envs
+            q = q.unsqueeze(0)  # replicate q for all envs
         q = q.to(self.device)
         joint_start = self.builder.articulation_start[index]
         given_joints = q.shape[1]
@@ -126,14 +122,12 @@ class Simulator:
         joint_act = wp.to_torch(self.control.joint_act).reshape((self.num_envs, -1))
         joint_act[:, joint_start : joint_start + given_joints] = q
 
-        warp.sim.eval_fk(
-            self.model, self.state_0.joint_q, self.state_0.joint_qd, None, self.state_0
-        )
+        warp.sim.eval_fk(self.model, self.state_0.joint_q, self.state_0.joint_qd, None, self.state_0)
 
     def set_articulation_control_q(self, index: int, q: torch.Tensor):
         assert index < self.builder.articulation_count
         if q.ndim == 1:
-            q = q.unsqueeze(0) # replicate q for all envs
+            q = q.unsqueeze(0)  # replicate q for all envs
         q = q.to(self.device)
         joint_start = self.builder.articulation_start[index]
         given_joints = q.shape[1]

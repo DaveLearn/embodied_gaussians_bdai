@@ -1,7 +1,6 @@
 # Copyright (c) 2025 Boston Dynamics AI Institute LLC. All rights reserved.
 
 import logging
-import pickle
 import warnings
 from pathlib import Path
 
@@ -12,7 +11,6 @@ import zarr
 
 from embodied_gaussians.physics_simulator.simulator import Simulator
 from embodied_gaussians.utils.physics_utils import save_builder
-
 
 
 class Saver:
@@ -77,35 +75,19 @@ class Saver:
         self.timestamps = torch.zeros(max_frames, device="cpu")
         if self.builder.particle_count > 0:
             p = self.builder.particle_count
-            self.state_particle_q = torch.zeros(
-                (t, p, 3), dtype=torch.float32, device=device
-            )
-            self.state_particle_qd = torch.zeros(
-                (t, p, 3), dtype=torch.float32, device=device
-            )
-            self.state_particle_f = torch.zeros(
-                (t, p, 3), dtype=torch.float32, device=device
-            )
+            self.state_particle_q = torch.zeros((t, p, 3), dtype=torch.float32, device=device)
+            self.state_particle_qd = torch.zeros((t, p, 3), dtype=torch.float32, device=device)
+            self.state_particle_f = torch.zeros((t, p, 3), dtype=torch.float32, device=device)
         if self.builder.body_count > 0:
             b = self.builder.body_count
-            self.state_body_q = torch.zeros(
-                (t, b, 7), dtype=torch.float32, device=device
-            )
-            self.state_body_qd = torch.zeros(
-                (t, b, 6), dtype=torch.float32, device=device
-            )
-            self.state_body_f = torch.zeros(
-                (t, b, 6), dtype=torch.float32, device=device
-            )
+            self.state_body_q = torch.zeros((t, b, 7), dtype=torch.float32, device=device)
+            self.state_body_qd = torch.zeros((t, b, 6), dtype=torch.float32, device=device)
+            self.state_body_f = torch.zeros((t, b, 6), dtype=torch.float32, device=device)
         j = len(self.builder.joint_act)
         if j:
             self.state_joint_q = torch.zeros((t, j), dtype=torch.float32, device=device)
-            self.state_joint_qd = torch.zeros(
-                (t, j), dtype=torch.float32, device=device
-            )
-            self.control_joint_act = torch.zeros(
-                (t, j), dtype=torch.float32, device=device
-            )
+            self.state_joint_qd = torch.zeros((t, j), dtype=torch.float32, device=device)
+            self.control_joint_act = torch.zeros((t, j), dtype=torch.float32, device=device)
 
     def clear_allocation(self):
         self.current_index = 0
@@ -124,9 +106,7 @@ class Saver:
             self.control_joint_act.zero_()
 
     def record_state_and_control(self, time: float):
-        self._record_state_and_control(
-            time, self.simulator.state_0, self.simulator.control
-        )
+        self._record_state_and_control(time, self.simulator.state_0, self.simulator.control)
 
     def _record_state_and_control(
         self,

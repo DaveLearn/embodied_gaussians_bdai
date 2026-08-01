@@ -9,7 +9,14 @@ import warp.sim
 import torch
 
 
-from embodied_gaussians import (Body, Ground, VirtualCamerasBuilder, EmbodiedGaussiansBuilder, EmbodiedGaussiansEnvironment, read_extrinsics, read_ground)
+from embodied_gaussians import (
+    Body,
+    Ground,
+    VirtualCamerasBuilder,
+    EmbodiedGaussiansBuilder,
+    EmbodiedGaussiansEnvironment,
+    read_ground,
+)
 
 Q_START = np.array(
     [
@@ -63,7 +70,7 @@ def build_environment(num_envs: int = 1, add_gaussians: bool = True):
             collapse_fixed_joints=False,
         )
 
-    bid = builder.add_rigid_body(body, add_gaussians=add_gaussians)
+    bid = builder.add_rigid_body(body, add_gaussians=add_gaussians)  # noqa: F841
     if add_gaussians:
         builder.add_visual_body(ground_body)
     final_builder = EmbodiedGaussiansBuilder()

@@ -41,20 +41,12 @@ class EmbodiedGaussiansBuilder(ModelBuilder):
         for arr in arrs:
             getattr(self, arr).extend(getattr(builder, arr))
 
-        new_gaussian_body_ids = [
-            b + body_count if b != -1 else -1 for b in builder.gaussian_body_ids
-        ]
-        new_bodies_affected_by_visual_forces = [
-            b + body_count for b in builder.bodies_affected_by_visual_forces
-        ]
+        new_gaussian_body_ids = [b + body_count if b != -1 else -1 for b in builder.gaussian_body_ids]
+        new_bodies_affected_by_visual_forces = [b + body_count for b in builder.bodies_affected_by_visual_forces]
         self.gaussian_body_ids.extend(new_gaussian_body_ids)
-        self.bodies_affected_by_visual_forces.extend(
-            new_bodies_affected_by_visual_forces
-        )
+        self.bodies_affected_by_visual_forces.extend(new_bodies_affected_by_visual_forces)
 
-        super().add_builder(
-            builder, xform, update_num_env_count, separate_collision_group
-        )
+        super().add_builder(builder, xform, update_num_env_count, separate_collision_group)
 
     def add_visual_body(self, body: Body):
         # X_WB = np.asarray(body.X_WB)
@@ -136,25 +128,17 @@ class EmbodiedGaussiansBuilder(ModelBuilder):
                 body_id = self.shape_body[i]
                 mesh_open3d = o3d.geometry.TriangleMesh()
                 mesh_open3d.vertices = o3d.utility.Vector3dVector(mesh.vertices)
-                mesh_open3d.triangles = o3d.utility.Vector3iVector(
-                    mesh.indices.reshape(-1, 3)
-                )
+                mesh_open3d.triangles = o3d.utility.Vector3iVector(mesh.indices.reshape(-1, 3))
                 area = mesh_open3d.get_surface_area()
                 points_per_unit_area = 10000
-                points: o3d.geometry.PointCloud = (
-                    mesh_open3d.sample_points_poisson_disk(
-                        int(area * points_per_unit_area)
-                    )
-                )
+                points: o3d.geometry.PointCloud = mesh_open3d.sample_points_poisson_disk(int(area * points_per_unit_area))
                 means = np.asarray(points.points)
                 num_points = len(points.points)
                 area_per_point = 0.005
 
                 self.gaussian_means.extend(means.tolist())
                 self.gaussian_quats.extend([[1, 0, 0, 0]] * num_points)
-                self.gaussian_scales.extend(
-                    [[area_per_point, area_per_point, area_per_point]] * num_points
-                )
+                self.gaussian_scales.extend([[area_per_point, area_per_point, area_per_point]] * num_points)
                 self.gaussian_opacities.extend([0.5] * num_points)
                 self.gaussian_colors.extend([[0.5, 0.5, 0.5]] * num_points)
                 self.gaussian_body_ids.extend([body_id] * num_points)
@@ -163,18 +147,10 @@ class EmbodiedGaussiansBuilder(ModelBuilder):
         gaussian_model = GaussianModel(
             means=torch.tensor(self.gaussian_means, device=device, dtype=torch.float32),
             quats=torch.tensor(self.gaussian_quats, device=device, dtype=torch.float32),
-            scales=torch.tensor(
-                self.gaussian_scales, device=device, dtype=torch.float32
-            ),
-            opacities=torch.tensor(
-                self.gaussian_opacities, device=device, dtype=torch.float32
-            ),
-            colors=torch.tensor(
-                self.gaussian_colors, device=device, dtype=torch.float32
-            ),
-            body_ids=torch.tensor(
-                self.gaussian_body_ids, device=device, dtype=torch.int32
-            ),
+            scales=torch.tensor(self.gaussian_scales, device=device, dtype=torch.float32),
+            opacities=torch.tensor(self.gaussian_opacities, device=device, dtype=torch.float32),
+            colors=torch.tensor(self.gaussian_colors, device=device, dtype=torch.float32),
+            body_ids=torch.tensor(self.gaussian_body_ids, device=device, dtype=torch.int32),
         )
         return gaussian_model
 

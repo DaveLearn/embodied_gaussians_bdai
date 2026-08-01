@@ -42,9 +42,7 @@ class Params:
     """
     Save the posed images to a file so that the cameras don't need to be run again.
     """
-    builder: SimpleBodyBuilderSettings = field(
-        default_factory=SimpleBodyBuilderSettings
-    )
+    builder: SimpleBodyBuilderSettings = field(default_factory=SimpleBodyBuilderSettings)
 
 
 def main(params: Params):
@@ -67,9 +65,7 @@ def main(params: Params):
 
     extrinsics = read_extrinsics(params.extrinsics)
     if not params.offline:
-        datapoints = get_datapoints_from_live_cameras(
-            extrinsics
-        )
+        datapoints = get_datapoints_from_live_cameras(extrinsics)
         if params.save_posed_images:
             save_posed_images(f"temp/posed_images/{name}.npz", datapoints)
     else:
@@ -79,9 +75,7 @@ def main(params: Params):
             print("Posed images not found. Run with offline=False to generate them")
             return
 
-    result = SimpleBodyBuilder.build(
-        name=name, settings=settings, datapoints=datapoints, visualize=params.visualize
-    )
+    result = SimpleBodyBuilder.build(name=name, settings=settings, datapoints=datapoints, visualize=params.visualize)
 
     if result is None:
         print("Body builder failed")

@@ -65,7 +65,8 @@ class GaussianState:
                 opacities_logits=self.opacities_logits.reshape(*shape),
                 scale_log=self.scale_log.reshape(*shape, 3),
             )
-    
+
+
 @dataclass
 class GaussianModel:
     means: torch.Tensor  # (n_gaussians, 3)

@@ -8,7 +8,6 @@ from embodied_gaussians.embodied_simulator.adam import Adam
 from embodied_gaussians.embodied_simulator.gaussians import GaussianModel, GaussianState
 
 
-
 @dataclass
 class VisualForcesSettings:
     iterations: int = 3
@@ -37,18 +36,12 @@ class VisualForces:
         self.device = device
         self.means = torch.zeros((num_gaussians, 3), dtype=torch.float32, device=device)
         self.quats = torch.zeros((num_gaussians, 4), dtype=torch.float32, device=device)
-        self.forces = torch.zeros(
-            (num_gaussians, 3), dtype=torch.float32, device=device
-        )
-        self.moments = torch.zeros(
-            (num_gaussians, 3), dtype=torch.float32, device=device
-        )
+        self.forces = torch.zeros((num_gaussians, 3), dtype=torch.float32, device=device)
+        self.moments = torch.zeros((num_gaussians, 3), dtype=torch.float32, device=device)
         self.means.requires_grad = True
         self.quats.requires_grad = True
 
-        bodies_affected_by_visual_forces = (
-            torch.tensor(bodies_affected_by_visual_forces).int().cuda()
-        )
+        bodies_affected_by_visual_forces = torch.tensor(bodies_affected_by_visual_forces).int().cuda()
         body_ids = gaussian_model.body_ids
         # find body ids that are affected by visual forces
         mask = torch.zeros_like(body_ids, dtype=torch.bool)
@@ -86,9 +79,7 @@ class VisualForces:
         )
 
     def _initialize(self, body_ids: torch.Tensor):
-        segment_body_ids, segment_ids = torch.unique_consecutive(
-            body_ids, return_inverse=True
-        )
+        segment_body_ids, segment_ids = torch.unique_consecutive(body_ids, return_inverse=True)
         valid_segments = segment_body_ids != -1
         self._body_ids = segment_body_ids[valid_segments]
         self._num_bodies = len(self._body_ids)
@@ -101,16 +92,10 @@ class VisualForces:
             device=self.device,
             dtype=torch.int64,
         )
-        segment_to_output[valid_segments] = torch.arange(
-            self._num_bodies, device=self.device, dtype=torch.int64
-        )
+        segment_to_output[valid_segments] = torch.arange(self._num_bodies, device=self.device, dtype=torch.int64)
         self._reduction_ids = segment_to_output[segment_ids]
-        self._total_forces = torch.zeros(
-            (self._num_bodies + 1, 3), device=self.device, dtype=torch.float32
-        )
-        self._total_moments = torch.zeros(
-            (self._num_bodies + 1, 3), device=self.device, dtype=torch.float32
-        )
+        self._total_forces = torch.zeros((self._num_bodies + 1, 3), device=self.device, dtype=torch.float32)
+        self._total_moments = torch.zeros((self._num_bodies + 1, 3), device=self.device, dtype=torch.float32)
 
     def sum_forces_by_body(self):
         self._total_forces.zero_()

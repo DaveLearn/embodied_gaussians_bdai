@@ -37,9 +37,7 @@ class FramesBuilder:
     def add_camera(self, name: str, K: np.ndarray, X_WC: np.ndarray):
         self.names.append(name)
         self.Ks.append(torch.from_numpy(K))
-        X_WC_opencv = X_WC @ np.array(
-            [[1, 0, 0, 0], [0, -1, 0, 0], [0, 0, -1, 0], [0, 0, 0, 1]]
-        )
+        X_WC_opencv = X_WC @ np.array([[1, 0, 0, 0], [0, -1, 0, 0], [0, 0, -1, 0], [0, 0, 0, 1]])
         X_CW_opencv = np.linalg.inv(X_WC_opencv)
         self.X_WCs.append(torch.from_numpy(X_WC))
         self.X_CWs_opencv.append(torch.from_numpy(X_CW_opencv))

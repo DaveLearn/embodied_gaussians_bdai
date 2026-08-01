@@ -5,6 +5,7 @@ import numpy as np
 from scipy.spatial.transform import Rotation as R
 from embodied_gaussians.scene_builders.domain import Body, Gaussians
 
+
 def visualize(body: Body):
     o3d.visualization.draw_geometries(
         [
@@ -14,16 +15,13 @@ def visualize(body: Body):
         ]
     )
 
+
 def ellipsoid_meshes(gaussians: Gaussians):
     ellipsoid_meshes = []
     for i, mean in enumerate(gaussians.means):
         ellipsoid: o3d.geometry.TriangleMesh = o3d.geometry.TriangleMesh.create_sphere(radius=1.0)
-        ellipsoid.transform(np.array(
-            [[gaussians.scales[i][0], 0, 0, 0],
-            [0, gaussians.scales[i][1], 0, 0],
-            [0, 0, gaussians.scales[i][2], 0],
-            [0, 0, 0, 1]]
-        )
+        ellipsoid.transform(
+            np.array([[gaussians.scales[i][0], 0, 0, 0], [0, gaussians.scales[i][1], 0, 0], [0, 0, gaussians.scales[i][2], 0], [0, 0, 0, 1]])
         )
         ellipsoid.compute_vertex_normals()
         ellipsoid.paint_uniform_color(gaussians.colors[i])

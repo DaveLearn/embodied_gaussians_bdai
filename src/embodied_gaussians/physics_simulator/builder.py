@@ -38,22 +38,18 @@ class ModelBuilder(warp.sim.ModelBuilder):
         end_joint = len(self.joint_q)
         num_joints = end_joint - start_joint
         if initial_joints is not None:
-            assert len(initial_joints) <= num_joints, (
-                f"Initial joints must have length {num_joints}"
-            )
+            assert len(initial_joints) <= num_joints, f"Initial joints must have length {num_joints}"
             num_joints_given = len(initial_joints)
             self.joint_q[start_joint:num_joints_given] = initial_joints
 
     def finalize(self, device=None, requires_grad=False):
         res = super().finalize(device, requires_grad)
-        res.gravity_factor = wp.ones(
-            self.body_count, dtype=wp.float32, requires_grad=requires_grad
-        )
+        res.gravity_factor = wp.ones(self.body_count, dtype=wp.float32, requires_grad=requires_grad)
         return res
-    
+
     def save_to_file(self, file_path: str):
         save_builder(file_path, self)
-    
+
     @staticmethod
     def load_from_file(file_path: str):
         return load_builder(file_path)

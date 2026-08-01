@@ -28,6 +28,7 @@ dependencies = [
 [dependency-groups]
 build = ["scikit-build-core>=0.10", "pybind11>=2.10"]
 test = ["pytest>=8.3.5,<9"]
+lint = ["ruff==0.15.22"]
 
 [tool.pixi.workspace]
 channels = ["conda-forge"]
@@ -48,13 +49,23 @@ pip = ">=25.0.1,<26"
 embodied-gaussians = { path = ".", editable = true }
 
 [tool.pixi.environments]
-default = { features = ["build", "test"], solve-group = "default" }
+default = { features = ["build", "test", "lint"], solve-group = "default" }
 
 [tool.pixi.tasks]
 build-gsplat = "python scripts/build_gsplat.py"
 build = { cmd = "python -c \"import gsplat\"", depends-on = ["build-gsplat"] }
 test = "pytest"
 demo = "python examples/example_embodied_pusht_offline.py"
+format = "ruff format src scripts examples"
+format-check = "ruff format --check src scripts examples"
+lint = "ruff check src scripts examples"
 
 [tool.pixi.activation]
 env = { LD_LIBRARY_PATH = "$CONDA_PREFIX/lib:$LD_LIBRARY_PATH" }
+
+[tool.ruff]
+line-length = 150
+extend-exclude = ["examples/output"]
+
+[tool.ruff.lint]
+select = ["E", "F"]

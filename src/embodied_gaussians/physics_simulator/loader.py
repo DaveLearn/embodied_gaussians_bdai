@@ -3,12 +3,10 @@
 import warnings
 from pathlib import Path
 
-import numpy as np
 import warp.sim
 import zarr
 from embodied_gaussians.utils.physics_utils import load_builder
 from embodied_gaussians.utils.timestamps import timestamp_to_index
-
 
 
 class Loader:
@@ -71,15 +69,9 @@ class Loader:
         state = warp.sim.State()
         control = warp.sim.Control(None)
         if p > 0:
-            state.particle_q = warp.from_numpy(
-                self.state_particle_q[index], device=device
-            )
-            state.particle_qd = warp.from_numpy(
-                self.state_particle_qd[index], device=device
-            )
-            state.particle_f = warp.from_numpy(
-                self.state_particle_f[index], device=device
-            )
+            state.particle_q = warp.from_numpy(self.state_particle_q[index], device=device)
+            state.particle_qd = warp.from_numpy(self.state_particle_qd[index], device=device)
+            state.particle_f = warp.from_numpy(self.state_particle_f[index], device=device)
 
         if b > 0:
             state.body_q = warp.from_numpy(self.state_body_q[index], device=device)
@@ -88,7 +80,5 @@ class Loader:
         if j > 0:
             state.joint_q = warp.from_numpy(self.state_joint_q[index], device=device)
             state.joint_qd = warp.from_numpy(self.state_joint_qd[index], device=device)
-            control.joint_act = warp.from_numpy(
-                self.control_joint_act[index], device=device
-            )
+            control.joint_act = warp.from_numpy(self.control_joint_act[index], device=device)
         return state, control

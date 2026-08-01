@@ -30,9 +30,7 @@ class VirtualCameras:
 
     def __post_init__(self):
         assert self.X_WC.shape == self.X_CW_opencv.shape
-        assert self.X_WC.shape[1] == self.K.shape[0], (
-            f"{self.X_WC[:1].shape} != {self.K[:1].shape}"
-        )
+        assert self.X_WC.shape[1] == self.K.shape[0], f"{self.X_WC[:1].shape} != {self.K[:1].shape}"
         assert self.X_WC.shape[1] == self.T_BC.shape[0]
         assert self.T_BC.shape[-1] == 7
         self.K_cpu = self.K.cpu()
@@ -64,9 +62,7 @@ class VirtualCameras:
             ],
         )
 
-    def render(
-        self, timestamp: float, gaussian_state: GaussianState, force: bool = False
-    ):
+    def render(self, timestamp: float, gaussian_state: GaussianState, force: bool = False):
         if timestamp == self.last_rendered_at and not force:
             return
         c = self
@@ -128,21 +124,13 @@ class VirtualCamerasBuilder:
             height=self.height,
             near=self.near,
             far=self.far,
-            parent_body=torch.tensor(
-                self.parent_body, dtype=torch.int32, device=device
-            ),
+            parent_body=torch.tensor(self.parent_body, dtype=torch.int32, device=device),
             K=torch.from_numpy(Ks).float().to(device),
             T_BC=torch.from_numpy(T_BCs).float().to(device),
-            X_CW_opencv=torch.zeros(
-                (num_envs, num_cameras, 4, 4), dtype=torch.float32, device=device
-            ),
-            X_WC=torch.zeros(
-                (num_envs, num_cameras, 4, 4), dtype=torch.float32, device=device
-            ),
+            X_CW_opencv=torch.zeros((num_envs, num_cameras, 4, 4), dtype=torch.float32, device=device),
+            X_WC=torch.zeros((num_envs, num_cameras, 4, 4), dtype=torch.float32, device=device),
             names=self.names,
-            rendered_images=torch.zeros(
-                (num_envs, num_cameras, self.height, self.width, 3)
-            ),
+            rendered_images=torch.zeros((num_envs, num_cameras, self.height, self.width, 3)),
             background=torch.tensor(self.background).float().to(device) / 255.0,
         )
 
@@ -171,7 +159,7 @@ def update_poses_kernel(
         wp.vec4f(0.0, -1.0, 0.0, 0.0),
         wp.vec4f(0.0, 0.0, -1.0, 0.0),
         wp.vec4f(0.0, 0.0, 0.0, 1.0),
-    ) 
+    )
     # X_BLENDER_TO_OPENCV = wp.mat44(
     #     1.0, 0.0, 0.0, 0.0,
     #     0.0, -1.0, 0.0, 0.0,

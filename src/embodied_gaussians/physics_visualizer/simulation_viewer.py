@@ -22,9 +22,7 @@ class SimulationViewer(marsoom.Viewer3D):
 
     def set_simulator(self, simulator: Simulator):
         self.simulator = simulator
-        self.sim_renderer = warp.sim.render.CreateSimRenderer(
-            marsoom.cuda.OpenGLRendererWrapper
-        )(self.simulator.model, 0)
+        self.sim_renderer = warp.sim.render.CreateSimRenderer(marsoom.cuda.OpenGLRendererWrapper)(self.simulator.model, 0)
         self.render_state = self.simulator.model.state()
         self.num_bodies = self.simulator.model.body_count
         self.body_id = 0
@@ -44,23 +42,14 @@ class SimulationViewer(marsoom.Viewer3D):
         self.keyboard()
         if self.enable_manipulate:
             env_id = self.body_id // self.bodies_per_env
-            X_WO = transform_to_matrix(
-                wp.to_torch(self.render_state.body_q)[self.body_id]
-                .detach()
-                .cpu()
-                .numpy()
-            )
+            X_WO = transform_to_matrix(wp.to_torch(self.render_state.body_q)[self.body_id].detach().cpu().numpy())
             guizmo.set_id(100)
-            c, X_WO = self.manipulate(
-                X_WO, operation=self.manipulate_operation, mode=self.manipulate_mode
-            )
+            c, X_WO = self.manipulate(X_WO, operation=self.manipulate_operation, mode=self.manipulate_mode)
             if c:
                 T_WO = wp.transformf(*transform_from_matrix(X_WO).tolist())
                 T_EW = wp.transform_inverse(self.env_xforms_numpy[env_id])
                 T_EO = T_EW * T_WO
-                wp.to_torch(self.simulator.state_0.body_q)[self.body_id] = torch.tensor(
-                    T_EO
-                ).cuda()
+                wp.to_torch(self.simulator.state_0.body_q)[self.body_id] = torch.tensor(T_EO).cuda()
 
     def keyboard(self):
         if imgui.is_key_pressed(imgui.Key.m):
