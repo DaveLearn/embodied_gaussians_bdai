@@ -64,7 +64,6 @@ class EmbodiedGaussiansBuilder(ModelBuilder):
         X_WB = np.asarray(body.X_WB)
         quat = wp.quat_from_matrix(X_WB[:3, :3])
         trans = X_WB[:3, 3]
-        trans[2] = 0.1
         t = wp.transformf(*trans, *quat)  # type: ignore
         b = self.add_body(origin=t)  # type: ignore
         self.bodies_affected_by_visual_forces.append(b)

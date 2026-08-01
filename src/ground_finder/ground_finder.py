@@ -59,7 +59,12 @@ class GroundFinder:
             depth_image = o3d.geometry.Image(datapoint.depth)
             if datapoint.image is not None:
                 color_image = o3d.geometry.Image(datapoint.image)
-                rgbd_image = o3d.geometry.RGBDImage.create_from_color_and_depth(color_image, depth_image, convert_rgb_to_intensity=False)
+                rgbd_image = o3d.geometry.RGBDImage.create_from_color_and_depth(
+                    color_image,
+                    depth_image,
+                    depth_scale=1.0 / datapoint.depth_scale,
+                    convert_rgb_to_intensity=False,
+                )
                 pointcloud = o3d.geometry.PointCloud.create_from_rgbd_image(rgbd_image, intrinsics)
             else:
                 pointcloud = o3d.geometry.PointCloud.create_from_depth_image(

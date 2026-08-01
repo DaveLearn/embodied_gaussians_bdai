@@ -178,8 +178,8 @@ class SimpleBodyBuilder:
     ) -> o3d.geometry.OrientedBoundingBox | None:
         cl, ind = pc.remove_radius_outlier(nb_points=outlier_nb_points, radius=outlier_radius)
         pc = pc.select_by_index(ind)
-        if len(pc.points) == 0:
-            logger.warning("Could not find bounding box because no points left after outlier removal")
+        if len(pc.points) < 10:
+            logger.warning("Could not find bounding box because not enough points left after outlier removal")
             return None
 
         obb = pc.get_minimal_oriented_bounding_box()
@@ -200,7 +200,12 @@ class SimpleBodyBuilder:
             depth_image = o3d.geometry.Image(datapoint.depth)
             if datapoint.image is not None:
                 color_image = o3d.geometry.Image(datapoint.image)
-                rgbd_image = o3d.geometry.RGBDImage.create_from_color_and_depth(color_image, depth_image, convert_rgb_to_intensity=False)
+                rgbd_image = o3d.geometry.RGBDImage.create_from_color_and_depth(
+                    color_image,
+                    depth_image,
+                    depth_scale=1.0 / datapoint.depth_scale,
+                    convert_rgb_to_intensity=False,
+                )
                 pointcloud = o3d.geometry.PointCloud.create_from_rgbd_image(rgbd_image, intrinsics)
             else:
                 pointcloud = o3d.geometry.PointCloud.create_from_depth_image(
