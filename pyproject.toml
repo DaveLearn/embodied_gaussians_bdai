@@ -55,7 +55,7 @@ default = { features = ["build", "test"], solve-group = "default" }
 [tool.pixi.tasks]
 build-gsplat = "python scripts/build_gsplat.py"
 build-pysegreduce = { cmd = "pip install git+https://github.com/jc211/pysegreduce.git@67fde3df40c6220ed5a0ad38eac2caabf019e0c9 --no-build-isolation", env = { CUDAARCHS = "native" } }
-build = { depends-on = ["build-gsplat", "build-pysegreduce"] }
+build = { cmd = "python -c \"import gsplat, pysegreduce\"", depends-on = ["build-gsplat", "build-pysegreduce"] }
 test = "pytest"
 demo = "python examples/example_embodied_pusht_offline.py"
 
