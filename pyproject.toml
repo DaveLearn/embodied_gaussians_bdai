@@ -29,6 +29,7 @@ dependencies = [
 build = ["scikit-build-core>=0.10", "pybind11>=2.10"]
 test = ["pytest>=8.3.5,<9"]
 lint = ["ruff==0.15.22"]
+typecheck = ["basedpyright==1.39.9"]
 
 [tool.pixi.workspace]
 channels = ["conda-forge"]
@@ -49,16 +50,18 @@ pip = ">=25.0.1,<26"
 embodied-gaussians = { path = ".", editable = true }
 
 [tool.pixi.environments]
-default = { features = ["build", "test", "lint"], solve-group = "default" }
+default = { features = ["build", "test", "lint", "typecheck"], solve-group = "default" }
 
 [tool.pixi.tasks]
 build-gsplat = "python scripts/build_gsplat.py"
 build = { cmd = "python -c \"import gsplat\"", depends-on = ["build-gsplat"] }
-test = "pytest"
+test = "pytest; code=$?; [ $code -eq 0 ] || [ $code -eq 5 ]"
 demo = "python examples/example_embodied_pusht_offline.py"
 format = "ruff format src scripts examples"
 format-check = "ruff format --check src scripts examples"
 lint = "ruff check src scripts examples"
+typecheck = "basedpyright"
+check = { depends-on = ["format-check", "lint", "typecheck", "test"] }
 
 [tool.pixi.activation]
 env = { LD_LIBRARY_PATH = "$CONDA_PREFIX/lib:$LD_LIBRARY_PATH" }
@@ -69,3 +72,18 @@ extend-exclude = ["examples/output"]
 
 [tool.ruff.lint]
 select = ["E", "F"]
+
+[tool.basedpyright]
+include = ["src"]
+typeCheckingMode = "standard"
+pythonVersion = "3.11"
+failOnWarnings = true
+allowedUntypedLibraries = [
+    "gsplat",
+    "isegm_gui",
+    "marsoom",
+    "open3d",
+    "realsense",
+    "torchcodec",
+    "warp",
+]

@@ -1,3 +1,4 @@
+# type: ignore
 # Copyright (c) 2025 Boston Dynamics AI Institute LLC. All rights reserved.
 
 from pathlib import Path

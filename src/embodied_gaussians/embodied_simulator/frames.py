@@ -1,6 +1,7 @@
 # Copyright (c) 2025 Boston Dynamics AI Institute LLC. All rights reserved.
 
 from dataclasses import dataclass
+from typing import List
 import numpy as np
 import torch
 
@@ -18,7 +19,7 @@ class Frames:
     colors_gpu: torch.Tensor
     device: str = "cuda"
 
-    def update_colors(self, name: str, timestamp: float, color: torch.Tensor):
+    def update_colors(self, name: str, timestamp: float, color: torch.Tensor) -> None:
         index = self.names.index(name)
         assert color.shape == (self.height, self.width, 3)
         self.timestamps[index] = timestamp
@@ -26,15 +27,15 @@ class Frames:
 
 
 class FramesBuilder:
-    def __init__(self, width: int, height: int):
+    def __init__(self, width: int, height: int) -> None:
         self.width = width
         self.height = height
-        self.names = []
-        self.Ks = []
-        self.X_WCs = []  # blender standard
-        self.X_CWs_opencv = []  # opencv standard
+        self.names: List[str] = []
+        self.Ks: List[torch.Tensor] = []
+        self.X_WCs: List[torch.Tensor] = []  # blender standard
+        self.X_CWs_opencv: List[torch.Tensor] = []  # opencv standard
 
-    def add_camera(self, name: str, K: np.ndarray, X_WC: np.ndarray):
+    def add_camera(self, name: str, K: np.ndarray, X_WC: np.ndarray) -> None:
         self.names.append(name)
         self.Ks.append(torch.from_numpy(K))
         X_WC_opencv = X_WC @ np.array([[1, 0, 0, 0], [0, -1, 0, 0], [0, 0, -1, 0], [0, 0, 0, 1]])
@@ -42,7 +43,7 @@ class FramesBuilder:
         self.X_WCs.append(torch.from_numpy(X_WC))
         self.X_CWs_opencv.append(torch.from_numpy(X_CW_opencv))
 
-    def finalize(self, device="cuda"):
+    def finalize(self, device: str = "cuda") -> Frames:
         num_frames = len(self.names)
         return Frames(
             width=self.width,

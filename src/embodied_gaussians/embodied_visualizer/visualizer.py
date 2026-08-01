@@ -28,8 +28,8 @@ class EmbodiedGUI(marsoom.Window):
     def set_environment(self, environment: EmbodiedGaussiansEnvironment):
         self.viewer_3d.set_environment(environment)
 
-    async def run(self):
-        async for _ in periodic(1 / 60):
+    async def run_async(self, fps: float = 60.0):
+        async for _ in periodic(1 / fps):
             if self.should_exit():
                 break
             self.step()

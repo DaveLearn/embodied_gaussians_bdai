@@ -34,7 +34,6 @@ class PointCloudBodyBuilderSettings:
     opacity_threshold: float = 0.5  # Opacity threshold for optimization
     min_scale: tuple[float, float, float] = (0.01, 0.01, 0.01)
     max_scale: tuple[float, float, float] = (0.03, 0.03, 0.03)
-    max_depth: float = 2.0
     """
     If true, the gaussians will be disks. If false, the gaussians will be ellipsoids. This used to make sure the ground is flat.
     """
@@ -55,7 +54,7 @@ class PointCloudBodyBuilder:
         if visualize:
             pcd = o3d.geometry.PointCloud()
             pcd.points = o3d.utility.Vector3dVector(points)
-            o3d.visualization.draw_geometries([pcd])
+            o3d.visualization.draw_geometries([pcd])  # pyright: ignore[reportAttributeAccessIssue]
 
         # # ================ Step 1: Train Gaussians =================
         gaussians = PointCloudBodyBuilder._train_gaussians(
@@ -70,7 +69,7 @@ class PointCloudBodyBuilder:
         )
 
         if visualize:
-            o3d.visualization.draw_geometries(
+            o3d.visualization.draw_geometries(  # pyright: ignore[reportAttributeAccessIssue]
                 [
                     o3d.geometry.TriangleMesh.create_coordinate_frame(0.1),
                     *ellipsoid_meshes(gaussians),
@@ -101,13 +100,16 @@ class PointCloudBodyBuilder:
         params = PointCloudBodyBuilder._create_initial_gaussian_state(initial_points)
         # with torch.no_grad():
         #     params["means"] += torch.randn_like(params["means"]) * 0.1
-        initial_gaussians = Gaussians(  # noqa: F841
-            means=params["means"].detach().cpu().numpy(),
-            quats=GaussianActivations.quat(params["quats"]).detach().cpu().numpy(),
-            scales=GaussianActivations.scale(params["scales"]).detach().cpu().numpy(),
-            opacities=GaussianActivations.opacity(params["opacities"]).detach().cpu().numpy(),
-            colors=GaussianActivations.color(params["colors"]).detach().cpu().numpy(),
-        )
+        # initial_gaussians = Gaussians(
+        #    means=params["means"].detach().cpu().numpy(),
+        #    quats=GaussianActivations.quat(params["quats"]).detach().cpu().numpy(),
+        #    scales=GaussianActivations.scale(params["scales"]).detach().cpu().numpy(),
+        #    opacities=GaussianActivations.opacity(params["opacities"])
+        #    .detach()
+        #    .cpu()
+        #    .numpy(),
+        #    colors=GaussianActivations.color(params["colors"]).detach().cpu().numpy(),
+        # )
 
         # This takes a long time to run because it's a lot of gaussians
         # if visualize:
@@ -120,6 +122,9 @@ class PointCloudBodyBuilder:
 
         datapoints = [datapoints[0]]  # , datapoints[1]]#, datapoints[2]]
         gt_data = PointCloudBodyBuilder._get_rasterization_groundtruth(datapoints, max_depth=max_depth)
+        groundtruth = None
+        groundtruth_depth = None
+
         if visualize:
             # concat all depth
             depths = []
@@ -184,6 +189,8 @@ class PointCloudBodyBuilder:
 
             if visualize and i % 100 == 0:
                 # print(float(loss))
+                assert groundtruth is not None
+                assert groundtruth_depth is not None
                 num_images = gt_data.images.shape[0]
                 rgb = render_colors[..., :3].detach().cpu().numpy()
                 depth = render_colors[..., -1].detach().cpu().numpy()
@@ -205,10 +212,10 @@ class PointCloudBodyBuilder:
 
         return Gaussians(
             means=params["means"].detach().cpu().numpy(),
-            quats=GaussianActivations.quat(params["quats"]).detach().cpu().numpy(),
-            scales=GaussianActivations.scale(params["scales"]).detach().cpu().numpy(),
-            opacities=GaussianActivations.opacity(params["opacities"]).detach().cpu().numpy(),
-            colors=GaussianActivations.color(params["colors"]).detach().cpu().numpy(),
+            quats=GaussianActivations.quat(params["quats"]).detach().cpu().numpy().tolist(),
+            scales=GaussianActivations.scale(params["scales"]).detach().cpu().numpy().tolist(),
+            opacities=GaussianActivations.opacity(params["opacities"]).detach().cpu().numpy().tolist(),
+            colors=GaussianActivations.color(params["colors"]).detach().cpu().numpy().tolist(),
         )
 
     @staticmethod

@@ -8,7 +8,7 @@ import numpy as np
 def convert_matrix_to_transform(matrix: np.ndarray) -> wp.transformf:
     quat = wp.quat_from_matrix(matrix[:3, :3])
     pos = matrix[:3, 3]
-    return wp.transformf(*pos, *quat)
+    return wp.transformf(*pos, *quat)  # type: ignore
 
 
 def find_distant_query_points(max_distance: float, query_xyz: np.ndarray, target_xyz: np.ndarray) -> np.ndarray:
@@ -47,9 +47,9 @@ def find_distant_query_points_kernel(
 ):
     tid = wp.tid()
     gx = query_xyz[tid]
-    query = wp.hash_grid_query(grid, gx, wp.float32(max_distance))
-    index = int(0)
-    best_distance = wp.float32(max_distance)
+    query = wp.hash_grid_query(grid, gx, wp.float32(max_distance))  # type: ignore
+    index = wp.int32(0)
+    best_distance = wp.float32(max_distance)  # type: ignore
     best_index = int(-1)
     while wp.hash_grid_query_next(query, index):
         n = gx - target_xyz[index]

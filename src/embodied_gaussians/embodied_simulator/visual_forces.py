@@ -41,11 +41,11 @@ class VisualForces:
         self.means.requires_grad = True
         self.quats.requires_grad = True
 
-        bodies_affected_by_visual_forces = torch.tensor(bodies_affected_by_visual_forces).int().cuda()
+        bodies_affected_by_visual_forces_tensor = torch.tensor(bodies_affected_by_visual_forces).int().cuda()
         body_ids = gaussian_model.body_ids
         # find body ids that are affected by visual forces
         mask = torch.zeros_like(body_ids, dtype=torch.bool)
-        for b in bodies_affected_by_visual_forces:
+        for b in bodies_affected_by_visual_forces_tensor:
             mask = mask | (body_ids == b)
         self._gaussians_not_involved_in_visual_forces = ~mask
 
@@ -56,7 +56,7 @@ class VisualForces:
                 wp.from_torch(self.means, dtype=wp.vec3),
                 wp.from_torch(self.quats, dtype=wp.vec4),
             ],
-            lrs=[0.01, 0.01],
+            lrs=[0.01, 0.01],  # type: ignore
         )
         self.gaussian_state = gaussian_state
 
@@ -64,11 +64,15 @@ class VisualForces:
         self.optimizer.lrs = lrs
 
     def zero_grad(self):
-        self.means.grad.zero_()
-        self.quats.grad.zero_()
+        if self.means.grad is not None:
+            self.means.grad.zero_()
+        if self.quats.grad is not None:
+            self.quats.grad.zero_()
 
     def step(self):
         # zero out non-visual forces
+        assert self.means.grad is not None
+        assert self.quats.grad is not None
         self.means.grad[self._gaussians_not_involved_in_visual_forces, :] = 0
         self.quats.grad[self._gaussians_not_involved_in_visual_forces, :] = 0
         self.optimizer.step(

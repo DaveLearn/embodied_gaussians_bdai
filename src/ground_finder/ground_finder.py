@@ -123,6 +123,8 @@ class GroundFinder:
         if visualize:
             origin = o3d.geometry.TriangleMesh.create_coordinate_frame(size=1.0, origin=[0, 0, 0])
             inlier_cloud.paint_uniform_color([0.0, 1.0, 0.0])
-            o3d.visualization.draw_geometries([plane_points, origin, *all_pointclouds])
+            o3d.visualization.draw_geometries(  # pyright: ignore[reportAttributeAccessIssue]
+                [plane_points, origin, *all_pointclouds]
+            )
 
         return res

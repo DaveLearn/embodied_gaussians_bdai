@@ -1,5 +1,6 @@
 # Copyright (c) 2025 Boston Dynamics AI Institute LLC. All rights reserved.
 
+from typing import List
 import marsoom
 import marsoom.cuda
 import torch
@@ -43,7 +44,7 @@ class SimulationViewer(marsoom.Viewer3D):
         if self.enable_manipulate:
             env_id = self.body_id // self.bodies_per_env
             X_WO = transform_to_matrix(wp.to_torch(self.render_state.body_q)[self.body_id].detach().cpu().numpy())
-            guizmo.set_id(100)
+            guizmo.set_id(100)  # pyright: ignore[reportAttributeAccessIssue]
             c, X_WO = self.manipulate(X_WO, operation=self.manipulate_operation, mode=self.manipulate_mode)
             if c:
                 T_WO = wp.transformf(*transform_from_matrix(X_WO).tolist())
@@ -76,18 +77,21 @@ class SimulationViewer(marsoom.Viewer3D):
             self.body_id = (self.body_id - 1) % self.num_bodies
 
     def _create_env_xforms(self):
+        assert self.simulator is not None
         num_envs = self.simulator.model.num_envs
-        self.env_xforms = []
+        self.env_xforms: List[wp.transformf] = []
         grid = iter(GridBuilder())
         for i in range(num_envs):
             xform = wp.transformf(next(grid), wp.quat_identity(float))
             self.env_xforms.append(xform)
-        self.env_xforms = wp.array(self.env_xforms, dtype=wp.transformf)
+        self.env_xforms = wp.array(self.env_xforms, dtype=wp.transformf)  # type: ignore
         self.env_xforms_numpy = wp.array(self.env_xforms, dtype=wp.transformf).numpy()
         self.bodies_per_env = self.simulator.model.body_count // num_envs
 
     def _refresh_body_q(self):
+        assert self.simulator is not None
         body_q = self.simulator.state_0.body_q
+        assert body_q is not None
         wp.launch(
             kernel=transform_to_env_state_kernel,
             dim=(body_q.shape[0],),
@@ -103,9 +107,9 @@ class SimulationViewer(marsoom.Viewer3D):
 @wp.kernel
 def transform_to_env_state_kernel(
     bodies_per_env: int,
-    X_WE: wp.array(dtype=wp.transformf),
-    body_q: wp.array(dtype=wp.transformf),
-    out_body_q: wp.array(dtype=wp.transformf),
+    X_WE: wp.array(dtype=wp.transformf),  # type: ignore
+    body_q: wp.array(dtype=wp.transformf),  # type: ignore
+    out_body_q: wp.array(dtype=wp.transformf),  # type: ignore
 ):
     tid = wp.tid()
     env_id = tid / bodies_per_env

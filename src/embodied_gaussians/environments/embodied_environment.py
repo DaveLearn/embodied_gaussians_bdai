@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Callable
+from typing import Callable, List
 
 import torch
 import trio
@@ -42,13 +42,13 @@ class EmbodiedGaussiansActions(EnvironmentActions):
     physics_control: warp.sim.Control
 
 
-class EmbodiedGaussiansEnvironment(Environment):
+class EmbodiedGaussiansEnvironment(Environment[EmbodiedGaussiansActions, EmbodiedGaussiansObservations]):
     def __init__(
         self,
         builder: EmbodiedGaussiansBuilder,
         device: str = "cuda",
         requires_grad: bool = False,
-    ):
+    ) -> None:
         self.frames: Frames | None = None
         self.physics_settings = PhysicsSettings(substeps=20, xpbd_iterations=3)
         self.visual_forces_settings = VisualForcesSettings()
@@ -56,35 +56,35 @@ class EmbodiedGaussiansEnvironment(Environment):
         self.control = self.sim.model.control()
         self.virtual_cameras: VirtualCameras | None = None
         super().__init__()
-        self.streams = [torch.cuda.Stream() for _ in range(self.num_envs())]
+        self.streams: List[torch.cuda.Stream] = [torch.cuda.Stream() for _ in range(self.num_envs())]  # type: ignore
         self.stash_state()
 
-    def stash_state(self):
+    def stash_state(self) -> None:
         self.stashed_state = self.sim.clone_embodied_gaussian_state()
 
-    def restore_state(self):
+    def restore_state(self) -> None:
         self.sim.copy_embodied_gaussian_state(self.stashed_state)
         self.sim.eval_ik()
 
-    def add_virtual_cameras(self, cameras: VirtualCameras):
+    def add_virtual_cameras(self, cameras: VirtualCameras) -> None:
         self.virtual_cameras = cameras
 
     def builder(self) -> EmbodiedGaussiansBuilder:
         assert self.sim.builder
         return self.sim.builder  # type: ignore
 
-    def set_ground_friction(self, val: float):
+    def set_ground_friction(self, val: float) -> None:
         mu = wp.to_torch(self.sim.model.shape_materials.mu)
         mu[-1] = val
 
-    def get_ground_friction(self):
+    def get_ground_friction(self) -> float:
         mu = wp.to_torch(self.sim.model.shape_materials.mu)
         return float(mu[-1])
 
-    def num_envs(self):
+    def num_envs(self) -> int:
         return self.sim.num_envs
 
-    def step(self):
+    def step(self) -> None:
         self.sim.physics_step(self.physics_settings)
         self.sim.update_gaussian_transforms()
         if self.virtual_cameras is not None:
@@ -99,7 +99,7 @@ class EmbodiedGaussiansEnvironment(Environment):
                 self.physics_settings.dt / self.physics_settings.substeps,
             )
 
-    def dt(self):
+    def dt(self) -> float:
         return self.physics_settings.dt
 
     def observe(self, render_cameras: bool = True) -> EmbodiedGaussiansObservations:
@@ -116,36 +116,36 @@ class EmbodiedGaussiansEnvironment(Environment):
             rendered_images=rendered_images,
         )
 
-    def reset(self):
+    def reset(self) -> None:
         self.sim.reset()
         self.restore_state()
 
-    def act(self, actions: EmbodiedGaussiansActions):
+    def act(self, actions: EmbodiedGaussiansActions) -> None:
         copy_control(self.sim.control, actions.physics_control)
 
-    def set_robot_q(self, index: int, q: torch.Tensor):
+    def set_robot_q(self, index: int, q: torch.Tensor) -> None:
         self.sim.set_articulation_q(index, q)
 
-    def set_robot_desired_q(self, index: int, q: torch.Tensor):
+    def set_robot_desired_q(self, index: int, q: torch.Tensor) -> None:
         self.sim.set_articulation_control_q(index, q)
 
-    def default_actions(self):
+    def default_actions(self) -> EmbodiedGaussiansActions:
         return EmbodiedGaussiansActions(physics_control=self.sim.control)
 
     def time(self) -> float:
         return self.sim.get_time()
 
-    def set_frames(self, frames: Frames):
+    def set_frames(self, frames: Frames) -> None:
         self.frames = frames
 
-    def save_builder(self, path: Path):
+    def save_builder(self, path: Path) -> None:
         b: EmbodiedGaussiansBuilder = self.sim.builder
-        if b.body_count > 0:
-            b.body_q = self.sim.state_0.body_q.numpy().tolist()
-        if b.joint_count > 0:
-            b.joint_q = self.sim.state_0.joint_q.numpy().tolist()
-        if b.particle_count > 0:
-            b.particle_q = self.sim.state_0.particle_q.numpy().tolist()
+        if b.body_count > 0 and self.sim.state_0.body_q is not None:
+            b.body_q = self.sim.state_0.body_q.numpy().tolist()  # type: ignore
+        if b.joint_count > 0 and self.sim.state_0.joint_q is not None:
+            b.joint_q = self.sim.state_0.joint_q.numpy().tolist()  # type: ignore
+        if b.particle_count > 0 and self.sim.state_0.particle_q is not None:
+            b.particle_q = self.sim.state_0.particle_q.numpy().tolist()  # type: ignore
 
         if b.num_gaussians() > 0:
             with torch.no_grad():
@@ -157,17 +157,17 @@ class EmbodiedGaussiansEnvironment(Environment):
                 b.gaussian_colors = self.sim.gaussian_state.colors.cpu().numpy().tolist()
                 b.gaussian_body_ids = self.sim.gaussian_model.body_ids.cpu().numpy().tolist()
 
-        self.sim.builder.save_to_file(path)
+        self.sim.builder.save_to_file(str(path))
 
-    def render_virtual_cameras(self, force: bool = False):
+    def render_virtual_cameras(self, force: bool = False) -> torch.Tensor | None:
         if self.virtual_cameras is None:
-            return
+            return None
         if self.sim.get_time() == self.virtual_cameras.last_rendered_at and not force:
-            return
+            return None
         c = self.virtual_cameras
         return c.render(self.time(), self.sim.gaussian_state)
 
-    async def run_with_clock(self, clock: trio.testing.MockClock, callbacks: list[Callable] = []):
+    async def run_with_clock(self, clock: trio.testing.MockClock, callbacks: List[Callable] = []) -> None:
         async for _ in periodic(self.dt()):
             self.step()
             for callback in callbacks:
@@ -175,7 +175,7 @@ class EmbodiedGaussiansEnvironment(Environment):
             clock.jump(self.dt())
             await trio.sleep(0)
 
-    async def run(self, callbacks: list[Callable] = []):
+    async def run(self, callbacks: List[Callable] = []) -> None:
         async for _ in periodic(self.dt()):
             self.step()
             for callback in callbacks:
