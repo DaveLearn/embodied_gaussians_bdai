@@ -26,6 +26,8 @@ class SimulationViewer(marsoom.Viewer3D):
         self.sim_renderer = warp.sim.render.CreateSimRenderer(marsoom.cuda.OpenGLRendererWrapper)(self.simulator.model, 0)
         self.render_state = self.simulator.model.state()
         self.num_bodies = self.simulator.model.body_count
+        if self.num_bodies == 0:
+            self.enable_manipulate = False
         self.body_id = 0
         self._create_env_xforms()
 
@@ -41,6 +43,9 @@ class SimulationViewer(marsoom.Viewer3D):
             return
 
         self.keyboard()
+        if self.num_bodies == 0 or self.render_state.body_q is None or self.simulator.state_0.body_q is None:
+            self.enable_manipulate = False
+            return
         if self.enable_manipulate:
             env_id = self.body_id // self.bodies_per_env
             X_WO = transform_to_matrix(wp.to_torch(self.render_state.body_q)[self.body_id].detach().cpu().numpy())
@@ -53,8 +58,11 @@ class SimulationViewer(marsoom.Viewer3D):
                 wp.to_torch(self.simulator.state_0.body_q)[self.body_id] = torch.tensor(T_EO).cuda()
 
     def keyboard(self):
+        if not imgui.is_window_hovered():
+            return
+
         if imgui.is_key_pressed(imgui.Key.m):
-            self.enable_manipulate = not self.enable_manipulate
+            self.enable_manipulate = self.num_bodies > 0 and not self.enable_manipulate
         if imgui.is_key_pressed(imgui.Key.g):
             if self.manipulate_operation == guizmo.OPERATION.translate:
                 if self.manipulate_mode == guizmo.MODE.world:
@@ -71,9 +79,9 @@ class SimulationViewer(marsoom.Viewer3D):
                     self.manipulate_mode = guizmo.MODE.world
             else:
                 self.manipulate_operation = guizmo.OPERATION.rotate
-        if imgui.is_key_pressed(imgui.Key.keypad_add):
+        if self.num_bodies > 0 and imgui.is_key_pressed(imgui.Key.keypad_add):
             self.body_id = (self.body_id + 1) % self.num_bodies
-        if imgui.is_key_pressed(imgui.Key.keypad_subtract):
+        if self.num_bodies > 0 and imgui.is_key_pressed(imgui.Key.keypad_subtract):
             self.body_id = (self.body_id - 1) % self.num_bodies
 
     def _create_env_xforms(self):
@@ -91,7 +99,8 @@ class SimulationViewer(marsoom.Viewer3D):
     def _refresh_body_q(self):
         assert self.simulator is not None
         body_q = self.simulator.state_0.body_q
-        assert body_q is not None
+        if body_q is None or self.render_state.body_q is None:
+            return
         wp.launch(
             kernel=transform_to_env_state_kernel,
             dim=(body_q.shape[0],),

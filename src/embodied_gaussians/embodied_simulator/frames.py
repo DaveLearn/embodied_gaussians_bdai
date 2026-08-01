@@ -21,7 +21,8 @@ class Frames:
 
     def update_colors(self, name: str, timestamp: float, color: torch.Tensor) -> None:
         index = self.names.index(name)
-        assert color.shape == (self.height, self.width, 3)
+        expected_shape = (self.height, self.width, 3)
+        assert color.shape == expected_shape, f"Color shape is {tuple(color.shape)}, expected {expected_shape}"
         self.timestamps[index] = timestamp
         self.colors_gpu[index].copy_(color)
 
