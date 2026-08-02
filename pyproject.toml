@@ -23,6 +23,9 @@ dependencies = [
     "isegm @ git+https://github.com/jc211/ritm_interactive_segmentation",
     "pydantic",
     "pyrealsense2>=2.54.2,<3",
+    "pillow>=10.2",
+    "scipy>=1.14",
+    "segment-anything @ git+https://github.com/facebookresearch/segment-anything.git@6fdee8f2727f4506cfbbe553e23b895e27956588",
 ]
 
 [dependency-groups]
@@ -48,6 +51,7 @@ pip = ">=25.0.1,<26"
 
 [tool.pixi.pypi-dependencies]
 embodied-gaussians = { path = ".", editable = true }
+segment-anything = { git = "https://github.com/facebookresearch/segment-anything.git", rev = "6fdee8f2727f4506cfbbe553e23b895e27956588" }
 
 [tool.pixi.environments]
 default = { features = ["build", "test", "lint", "typecheck"], solve-group = "default" }
@@ -55,11 +59,13 @@ default = { features = ["build", "test", "lint", "typecheck"], solve-group = "de
 [tool.pixi.tasks]
 build-gsplat = "python scripts/build_gsplat.py"
 build = { cmd = "python -c \"import gsplat\"", depends-on = ["build-gsplat"] }
-test = "pytest; code=$?; [ $code -eq 0 ] || [ $code -eq 5 ]"
+test = "PYGLET_HEADLESS=true pytest; code=$?; [ $code -eq 0 ] || [ $code -eq 5 ]"
 demo = "python examples/example_embodied_pusht_offline.py"
-format = "ruff format src scripts examples"
-format-check = "ruff format --check src scripts examples"
-lint = "ruff check src scripts examples"
+capture-posed-rgbd = "python scripts/capture_posed_rgbd.py"
+segment-frame-instances = "python scripts/segment_frame_instances.py"
+format = "ruff format src scripts examples tests"
+format-check = "ruff format --check src scripts examples tests"
+lint = "ruff check src scripts examples tests"
 typecheck = "basedpyright"
 check = { depends-on = ["format-check", "lint", "typecheck", "test"] }
 
@@ -80,6 +86,7 @@ pythonVersion = "3.12"
 failOnWarnings = true
 reportPrivateImportUsage = false
 allowedUntypedLibraries = [
+    "segment_anything",
     "gsplat",
     "isegm_gui",
     "marsoom",

@@ -57,7 +57,37 @@ pixi r demo
 
 ## Scene Building
 
-These scripts require Realsense cameras directly connected to your device. Note: Offline image processing is not currently supported.
+The legacy capture scripts below require directly connected RealSense cameras.
+
+### Offline multi-view instance segmentation
+
+The frame segmentation integration associates SAM proposals across raw posed
+RGB-D views and writes globally consistent per-frame instance IDs. Capture the
+views without running the old per-object segmentation GUI:
+
+```bash
+pixi run capture-posed-rgbd temp/posed_images/scene.npz \
+    --extrinsics scripts/example_extrinsics.json
+```
+
+Segmentation also consumes the ground JSON/NumPy files created by ground-plane
+detection.
+
+Model weights are never downloaded automatically. Supply a local SAM ViT-H
+checkpoint explicitly:
+
+```bash
+pixi run segment-frame-instances \
+    temp/posed_images/scene.npz \
+    temp/ground_plane.json \
+    temp/scene_instances.npz \
+    --checkpoint-path /path/to/sam_vit_h_4b8939.pth \
+    --cache-dir .cache/frame-seg-init \
+    --cache-key scene
+```
+
+The output contains `frame_ids` and an `N x H x W` `pixel_object_ids` array.
+Zero denotes background and positive IDs remain consistent across views.
 
 ### 1. Ground Plane Detection
 First, detect the ground plane by running:

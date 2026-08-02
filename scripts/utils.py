@@ -1,7 +1,7 @@
 import typing
 import time
 from realsense import MultiRealsense
-from embodied_gaussians.scene_builders.domain import MaskedPosedImageAndDepth
+from embodied_gaussians.scene_builders.domain import MaskedPosedImageAndDepth, PosedImageAndDepth
 from embodied_gaussians.utils.utils import ExtrinsicsData
 
 
@@ -20,7 +20,25 @@ def get_datapoints_from_live_cameras(
     else:
         raise ValueError(f"Unknown segmentor {segmentor}")
 
-    datapoints = []
+    raw_datapoints = get_rgbd_datapoints_from_live_cameras(extrinsics)
+    return [
+        MaskedPosedImageAndDepth(
+            X_WC=datapoint.X_WC,
+            K=datapoint.K,
+            image=datapoint.image,
+            format=datapoint.format,
+            depth=datapoint.depth,
+            depth_scale=datapoint.depth_scale,
+            mask=segmentor.segment_with_gui(datapoint.image),
+        )
+        for datapoint in raw_datapoints
+    ]
+
+
+def get_rgbd_datapoints_from_live_cameras(extrinsics: dict[str, ExtrinsicsData]) -> list[PosedImageAndDepth]:
+    """Capture raw posed RGB-D frames without launching a segmentation GUI."""
+
+    datapoints: list[PosedImageAndDepth] = []
     serial_numbers = list(extrinsics.keys())
     with MultiRealsense(serial_numbers=serial_numbers, enable_depth=True) as realsenses:
         realsenses.set_exposure(177, 70)
@@ -36,16 +54,13 @@ def get_datapoints_from_live_cameras(
                 continue
             K = all_intrinsics[serial]
             depth_scale = all_depth_scale[serial]
-            color = camera_data["color"]
-            mask = segmentor.segment_with_gui(color)
-            datapoint = MaskedPosedImageAndDepth(
+            datapoint = PosedImageAndDepth(
                 K=K,
                 X_WC=extrinsics[serial].X_WC,
                 image=camera_data["color"],
                 format="bgr",
                 depth=camera_data["depth"],
                 depth_scale=depth_scale,
-                mask=mask,
             )
             datapoints.append(datapoint)
     return datapoints

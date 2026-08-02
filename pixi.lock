@@ -205,6 +205,7 @@ environments:
       - pypi: direct+https://github.com/NVIDIA/warp/releases/download/v1.9.1/warp_lang-1.9.1%2Bcu13-py3-none-manylinux_2_34_x86_64.whl
       - pypi: git+https://github.com/davelearn/marsoom.git?rev=46ccb9b769dcc70c38cfb6cdbe58d9cee5c38037#46ccb9b769dcc70c38cfb6cdbe58d9cee5c38037
       - pypi: git+https://github.com/davelearn/realsense.git?rev=7f030bebaffe5c190cccbca9f578fd50d95a72ec#7f030bebaffe5c190cccbca9f578fd50d95a72ec
+      - pypi: git+https://github.com/facebookresearch/segment-anything.git?rev=6fdee8f2727f4506cfbbe553e23b895e27956588#6fdee8f2727f4506cfbbe553e23b895e27956588
       - pypi: git+https://github.com/jc211/ritm_interactive_segmentation#def5ff1ec309389d552f1a036000fc6160dd398f
       - pypi: git+https://github.com/jc211/shared_memory?rev=24904fa27711477ba4a0f8fe51e46f4686656750#24904fa27711477ba4a0f8fe51e46f4686656750
       - pypi: https://download-r2.pytorch.org/whl/cu130/torch-2.13.0%2Bcu130-cp312-cp312-manylinux_2_28_x86_64.whl
@@ -3163,6 +3164,9 @@ packages:
   - isegm @ git+https://github.com/jc211/ritm_interactive_segmentation
   - pydantic
   - pyrealsense2>=2.54.2,<3
+  - pillow>=10.2
+  - scipy>=1.14
+  - segment-anything @ git+https://github.com/facebookresearch/segment-anything.git@6fdee8f2727f4506cfbbe553e23b895e27956588
   requires_python: '>=3.12,<3.13'
 - pypi: direct+https://github.com/NVIDIA/warp/releases/download/v1.9.1/warp_lang-1.9.1%2Bcu13-py3-none-manylinux_2_34_x86_64.whl
   name: warp-lang
@@ -3207,6 +3211,19 @@ packages:
   - threadpoolctl
   - shared-memory @ git+https://github.com/jc211/shared_memory@24904fa27711477ba4a0f8fe51e46f4686656750
   requires_python: '>=3.10,<3.13'
+- pypi: git+https://github.com/facebookresearch/segment-anything.git?rev=6fdee8f2727f4506cfbbe553e23b895e27956588#6fdee8f2727f4506cfbbe553e23b895e27956588
+  name: segment-anything
+  version: '1.0'
+  requires_dist:
+  - matplotlib ; extra == 'all'
+  - pycocotools ; extra == 'all'
+  - opencv-python ; extra == 'all'
+  - onnx ; extra == 'all'
+  - onnxruntime ; extra == 'all'
+  - flake8 ; extra == 'dev'
+  - isort ; extra == 'dev'
+  - black ; extra == 'dev'
+  - mypy ; extra == 'dev'
 - pypi: git+https://github.com/jc211/ritm_interactive_segmentation#def5ff1ec309389d552f1a036000fc6160dd398f
   name: isegm
   version: '0.1'
