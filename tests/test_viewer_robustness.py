@@ -1,7 +1,9 @@
 from types import SimpleNamespace
 
+import numpy as np
 import pytest
 
+from embodied_gaussians.embodied_visualizer import embodied_viewer
 from embodied_gaussians.physics_visualizer import simulation_viewer as viewer_module
 
 
@@ -65,3 +67,14 @@ def test_hovered_keyboard_shortcut_toggles_manipulation(monkeypatch: pytest.Monk
     viewer.keyboard()
 
     assert viewer.enable_manipulate is True
+
+
+def test_numpy_transform_conversion_has_scalar_equality() -> None:
+    transform = np.eye(4, dtype=np.float32)
+
+    first = embodied_viewer._mat4_from_numpy(transform)
+    second = embodied_viewer._mat4_from_numpy(transform)
+
+    assert first == second
+    assert len(first) == 16
+    assert all(isinstance(value, float) for value in first)

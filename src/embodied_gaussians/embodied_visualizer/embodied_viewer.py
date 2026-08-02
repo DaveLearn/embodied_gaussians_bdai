@@ -51,6 +51,13 @@ class CameraWireframeWithImageAndTimestamp(marsoom.CameraWireframeWithImage):
         self.timestamp = -1.0
 
 
+def _mat4_from_numpy(matrix: np.ndarray) -> pyglet.math.Mat4:
+    values = np.asarray(matrix).reshape(-1)
+    if values.size != 16:
+        raise ValueError(f"Expected a 4x4 transform, got {matrix.shape}")
+    return pyglet.math.Mat4(*(float(value) for value in values))
+
+
 class EmbodiedViewer(SimulationViewer):
     def __init__(self, window, show_origin: bool = True):
         super().__init__(window, show_origin)
@@ -284,7 +291,7 @@ class EmbodiedViewer(SimulationViewer):
                     alpha=self.settings.wireframe_alpha,
                     texture_fmt=gl.GL_BGR,
                 )
-                self.cameras[name].matrix = pyglet.math.Mat4(frames.X_WCs_cpu[i].T.flatten().numpy())
+                self.cameras[name].matrix = _mat4_from_numpy(frames.X_WCs_cpu[i].T.numpy())
                 self.cameras[name].timestamp = -1.0
             camera = self.cameras[name]
             if camera.timestamp != frames.timestamps[i]:
@@ -320,7 +327,7 @@ class EmbodiedViewer(SimulationViewer):
                 X_WC = X_WCs[j, i]
                 t_WC = self.env_xforms_numpy[j][:3]
                 X_WC[:3, 3] += t_WC
-                camera.matrix = pyglet.math.Mat4(X_WC.T.flatten())
+                camera.matrix = _mat4_from_numpy(X_WC.T)
                 if camera.timestamp != cameras.last_rendered_at:
                     camera.update_image(cameras.rendered_images[j, i])
                     camera.timestamp = cameras.last_rendered_at

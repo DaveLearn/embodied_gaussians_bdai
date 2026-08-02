@@ -1,6 +1,7 @@
 # Copyright (c) 2025 Boston Dynamics AI Institute LLC. All rights reserved.
 
 import json
+import logging
 import typing
 from dataclasses import dataclass
 from pathlib import Path
@@ -10,6 +11,9 @@ import numpy as np
 
 from embodied_gaussians import Body, EmbodiedGaussiansEnvironment, FramesBuilder, EmbodiedGaussiansLoader, OfflineCameras
 from embodied_gaussians.utils.timestamps import timestamp_to_index
+
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -169,7 +173,7 @@ class DatasetManager:
             self.physics_loader = EmbodiedGaussiansLoader()
             self.physics_loader.load(physics_path)
         else:
-            print(f"Physics file not found at {physics_path}")
+            logger.info("Optional physics file not found at %s", physics_path)
 
     def timestamps(self) -> np.ndarray:
         assert self.physics_loader
