@@ -7,7 +7,7 @@ import sys
 import torch
 
 
-GSPLAT_URL = "git+https://github.com/nerfstudio-project/gsplat.git@d23d7ca5dd26c3756967304b621ae88521672ed5"
+GSPLAT_URL = "git+https://github.com/nerfstudio-project/gsplat.git@937e29912570c372bed6747a5c9bf85fed877bae"
 
 
 def main() -> None:
@@ -17,6 +17,7 @@ def main() -> None:
     major, minor = torch.cuda.get_device_capability()
     build_environment = os.environ.copy()
     build_environment["TORCH_CUDA_ARCH_LIST"] = f"{major}.{minor}"
+    build_environment.setdefault("MAX_JOBS", "2")
     subprocess.run(
         [sys.executable, "-m", "pip", "install", GSPLAT_URL, "--no-build-isolation"],
         check=True,

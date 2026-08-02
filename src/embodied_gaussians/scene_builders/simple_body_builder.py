@@ -1,4 +1,5 @@
 # Copyright (c) 2025 Boston Dynamics AI Institute LLC. All rights reserved.
+# pyright: reportArgumentType=false, reportCallIssue=false, reportOperatorIssue=false
 
 from dataclasses import dataclass, field
 from collections import namedtuple
@@ -13,7 +14,7 @@ import torch
 import warp as wp
 from scipy.spatial.transform import Rotation as R
 
-from gsplat.rendering import rasterization
+from embodied_gaussians.utils.gsplat import rasterization
 
 from embodied_gaussians.scene_builders.domain import (
     Particles,

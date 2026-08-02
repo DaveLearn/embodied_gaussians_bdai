@@ -1,25 +1,25 @@
 [project]
 name = "embodied-gaussians"
-requires-python = ">=3.11,<3.12"
+requires-python = ">=3.12,<3.13"
 authors = [{ name = "Jad Abou-Chakra" }]
 description = "Physically Embodied Gaussian Splatting"
 version = "0.1.0"
 dependencies = [
     "numpy>=1.26,<2",
-    "warp-lang==1.7.1",
-    "torch>=2.7,<2.8",
+    "warp-lang @ https://github.com/NVIDIA/warp/releases/download/v1.9.1/warp_lang-1.9.1%2Bcu13-py3-none-manylinux_2_34_x86_64.whl",
+    "torch==2.13.0",
     "tyro",
-    "torchvision>=0.22,<0.23",
+    "torchvision==0.28.0",
     "tqdm",
     "zarr>=3.0.4,<3.1",
     "trio",
     "trio-util",
     "opencv-python",
     "glfw>=2.8.0,<3",
-    "open3d>=0.18.0,<0.19.0",
-    "marsoom @ git+https://github.com/jc211/marsoom.git@febe61df91a75df10063bfb420e9e68a9a8cd6a9",
-    "torchcodec==0.3.0",
-    "realsense @ git+https://github.com/davelearn/realsense.git@b3cc6bae06bfac0f8719ac95a7511815dac1213d",
+    "open3d==0.19.0",
+    "marsoom @ git+https://github.com/davelearn/marsoom.git@46ccb9b769dcc70c38cfb6cdbe58d9cee5c38037",
+    "torchcodec==0.15.0",
+    "realsense @ git+https://github.com/davelearn/realsense.git@7f030bebaffe5c190cccbca9f578fd50d95a72ec",
     "isegm @ git+https://github.com/jc211/ritm_interactive_segmentation",
     "pydantic",
     "pyrealsense2>=2.54.2,<3",
@@ -33,15 +33,15 @@ typecheck = ["basedpyright==1.39.9"]
 
 [tool.pixi.workspace]
 channels = ["conda-forge"]
-platforms = [{ platform = "linux-64", cuda = "12.8", glibc = "2.31" }]
+platforms = [{ platform = "linux-64", cuda = "13.0", glibc = "2.31" }]
 
 [tool.pixi.pypi-options]
-extra-index-urls = ["https://download.pytorch.org/whl/cu128"]
+extra-index-urls = ["https://download.pytorch.org/whl/cu130"]
 
 [tool.pixi.dependencies]
 ffmpeg = ">=7,<8"
-cuda = "12.8.*"
-cuda-version = "<=12.8"
+cuda-nvcc = "13.0.*"
+cuda-version = "13.0.*"
 cmake = "*"
 ninja = "*"
 pip = ">=25.0.1,<26"
@@ -76,8 +76,9 @@ select = ["E", "F"]
 [tool.basedpyright]
 include = ["src"]
 typeCheckingMode = "standard"
-pythonVersion = "3.11"
+pythonVersion = "3.12"
 failOnWarnings = true
+reportPrivateImportUsage = false
 allowedUntypedLibraries = [
     "gsplat",
     "isegm_gui",

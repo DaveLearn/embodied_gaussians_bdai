@@ -1,4 +1,5 @@
 # Copyright (c) 2025 Boston Dynamics AI Institute LLC. All rights reserved.
+# pyright: reportArgumentType=false, reportCallIssue=false
 
 from typing import cast
 import numpy as np

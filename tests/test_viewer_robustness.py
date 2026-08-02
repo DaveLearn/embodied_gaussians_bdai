@@ -1,7 +1,10 @@
 from types import SimpleNamespace
 
+import numpy as np
 import pytest
 
+from embodied_gaussians.embodied_visualizer import embodied_viewer
+from embodied_gaussians.embodied_visualizer import visualizer
 from embodied_gaussians.physics_visualizer import simulation_viewer as viewer_module
 
 
@@ -65,3 +68,33 @@ def test_hovered_keyboard_shortcut_toggles_manipulation(monkeypatch: pytest.Monk
     viewer.keyboard()
 
     assert viewer.enable_manipulate is True
+
+
+def test_numpy_transform_conversion_has_scalar_equality() -> None:
+    transform = np.eye(4, dtype=np.float32)
+
+    first = embodied_viewer._mat4_from_numpy(transform)
+    second = embodied_viewer._mat4_from_numpy(transform)
+
+    assert first == second
+    assert len(first) == 16
+    assert all(isinstance(value, float) for value in first)
+
+
+def test_ui_scale_uses_pixel_ratio_by_default(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("EMBODIED_GAUSSIANS_UI_SCALE", raising=False)
+
+    assert visualizer._resolve_ui_scale(1.5) == 1.5
+    assert visualizer._resolve_ui_scale(0.75) == 1.0
+
+
+def test_ui_scale_can_be_overridden(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("EMBODIED_GAUSSIANS_UI_SCALE", "2.25")
+
+    assert visualizer._resolve_ui_scale(1.5) == 2.25
+
+
+def test_imgui_uses_measured_framebuffer_scale() -> None:
+    assert visualizer._measured_framebuffer_scale((320, 240), (320, 240)) == (1.0, 1.0)
+    assert visualizer._measured_framebuffer_scale((320, 240), (640, 480)) == (2.0, 2.0)
+    assert visualizer._measured_framebuffer_scale((0, 0), (0, 0)) == (1.0, 1.0)

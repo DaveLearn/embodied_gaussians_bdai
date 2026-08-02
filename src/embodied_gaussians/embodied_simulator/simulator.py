@@ -5,7 +5,7 @@ from dataclasses import dataclass
 import torch
 import warp as wp
 import warp.sim
-from gsplat.rendering import rasterization
+from embodied_gaussians.utils.gsplat import rasterization
 from embodied_gaussians.physics_simulator.simulator import Simulator, copy_control, copy_state
 
 from embodied_gaussians.embodied_simulator import EmbodiedGaussiansBuilder

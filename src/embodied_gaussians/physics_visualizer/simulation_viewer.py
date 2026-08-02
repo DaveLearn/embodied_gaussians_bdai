@@ -1,4 +1,5 @@
 # Copyright (c) 2025 Boston Dynamics AI Institute LLC. All rights reserved.
+# pyright: reportArgumentType=false, reportCallIssue=false, reportOperatorIssue=false
 
 from typing import List
 import marsoom
