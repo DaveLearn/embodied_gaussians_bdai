@@ -62,6 +62,37 @@ class FrameSegConfig:
     graph: GraphParams = field(default_factory=GraphParams)
 
 
+def _instance_color(instance_id: int) -> np.ndarray:
+    return np.array(
+        [
+            (instance_id * 73) % 256,
+            (instance_id * 127) % 256,
+            (instance_id * 179) % 256,
+        ],
+        dtype=np.float32,
+    )
+
+
+def overlay_instances(image: np.ndarray, image_format: str, labels: np.ndarray, alpha: float) -> np.ndarray:
+    if not 0.0 <= alpha <= 1.0:
+        raise ValueError("alpha must be between zero and one")
+    if image.shape[:2] != labels.shape:
+        raise ValueError(f"Image/label shape mismatch: {image.shape[:2]} != {labels.shape}")
+
+    rgb = np.asarray(image)[..., ::-1] if image_format == "bgr" else np.asarray(image)
+    rgb = rgb.astype(np.float32, copy=False)
+    if rgb.size and float(rgb.max()) <= 1.0:
+        rgb = rgb * 255.0
+
+    overlay = rgb.copy()
+    for instance_id in np.unique(labels):
+        if instance_id <= 0:
+            continue
+        mask = labels == instance_id
+        overlay[mask] = (1.0 - alpha) * rgb[mask] + alpha * _instance_color(int(instance_id))
+    return np.clip(overlay, 0, 255).astype(np.uint8)
+
+
 def _rgb_float_image(datapoint: PosedImageAndDepth) -> np.ndarray:
     color = np.asarray(datapoint.image)
     if color.ndim != 3 or color.shape[2] != 3:

@@ -3,6 +3,7 @@ from embodied_gaussians.segmentation.frame_seg import (
     InstanceSegmentation,
     build_frame_seg_observations,
     datapoints_for_instance,
+    overlay_instances,
     segment_datapoints,
 )
 
@@ -11,5 +12,6 @@ __all__ = [
     "InstanceSegmentation",
     "build_frame_seg_observations",
     "datapoints_for_instance",
+    "overlay_instances",
     "segment_datapoints",
 ]

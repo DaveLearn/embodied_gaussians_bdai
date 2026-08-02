@@ -63,6 +63,7 @@ test = "PYGLET_HEADLESS=true pytest; code=$?; [ $code -eq 0 ] || [ $code -eq 5 ]
 demo = "python examples/example_embodied_pusht_offline.py"
 capture-posed-rgbd = "python scripts/capture_posed_rgbd.py"
 segment-frame-instances = "python scripts/segment_frame_instances.py"
+export-frame-instances = "python scripts/export_frame_instances.py"
 format = "ruff format src scripts examples tests"
 format-check = "ruff format --check src scripts examples tests"
 lint = "ruff check src scripts examples tests"

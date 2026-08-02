@@ -89,6 +89,15 @@ pixi run segment-frame-instances \
 The output contains `frame_ids` and an `N x H x W` `pixel_object_ids` array.
 Zero denotes background and positive IDs remain consistent across views.
 
+Export overlays for inspection with:
+
+```bash
+pixi run export-frame-instances \
+    temp/posed_images/scene.npz \
+    temp/scene_instances.npz \
+    temp/scene_instance_overlays
+```
+
 ### 1. Ground Plane Detection
 First, detect the ground plane by running:
 ```bash
