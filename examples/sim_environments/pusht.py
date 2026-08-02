@@ -12,17 +12,15 @@ from embodied_gaussians import Environment, Task, EnvironmentActions, Environmen
 
 TBLOCK_ID = wp.constant(3)
 
+
 @dataclass
 class PushTEnvironmentActions(EnvironmentActions):
     pusher_desired_positions: torch.Tensor
 
     @classmethod
     def allocate(cls, num_env: int, device: str = "cuda"):
-        return PushTEnvironmentActions(
-            pusher_desired_positions=torch.zeros(
-                (num_env, 2), dtype=torch.float32, device=device
-            )
-        )
+        return PushTEnvironmentActions(pusher_desired_positions=torch.zeros((num_env, 2), dtype=torch.float32, device=device))
+
 
 @dataclass
 class PushTEnvironmentObservations(EnvironmentObservations):
@@ -30,17 +28,11 @@ class PushTEnvironmentObservations(EnvironmentObservations):
     tblock_transforms: torch.Tensor
 
     @classmethod
-    def allocate(
-        cls, num_env: int, device: str = "cuda"
-    ) -> "PushTEnvironmentObservations":
-        tblock_transforms = torch.zeros(
-            (num_env, 7), dtype=torch.float32, device=device
-        )
+    def allocate(cls, num_env: int, device: str = "cuda") -> "PushTEnvironmentObservations":
+        tblock_transforms = torch.zeros((num_env, 7), dtype=torch.float32, device=device)
         tblock_transforms[:, -1] = 1.0
         return PushTEnvironmentObservations(
-            pusher_positions=torch.zeros(
-                (num_env, 2), dtype=torch.float32, device=device
-            ),
+            pusher_positions=torch.zeros((num_env, 2), dtype=torch.float32, device=device),
             tblock_transforms=tblock_transforms,
         )
 
@@ -78,19 +70,13 @@ class PushTEnvironment(Environment, Task):
         builder: ModelBuilder,
     ):
         self._simulator = s = Simulator(builder)
-        self._physics_settings = PhysicsSettings(
-            dt=1.0 / 60.0, substeps=8, xpbd_iterations=10
-        )
+        self._physics_settings = PhysicsSettings(dt=1.0 / 60.0, substeps=8, xpbd_iterations=10)
         super(Environment).__init__()
         self.builder = builder
-        self._observations = PushTEnvironmentObservations.allocate(
-            self.builder.num_envs
-        )
+        self._observations = PushTEnvironmentObservations.allocate(self.builder.num_envs)
         self._success = torch.zeros((s.num_envs), dtype=torch.int32, device="cuda")
         self._rewards = torch.zeros((s.num_envs), dtype=torch.float32, device="cuda")
-        self._success_time = torch.zeros(
-            (s.num_envs), dtype=torch.float32, device="cuda"
-        )
+        self._success_time = torch.zeros((s.num_envs), dtype=torch.float32, device="cuda")
         self._X_ET = wp.transform_identity(dtype=float)
         # warm start cuda kernels
         self.step()
@@ -241,9 +227,7 @@ def get_reward_and_success_kernel(
     axis = wp.vec3f(0.0, 0.0, 0.0)
     wp.quat_to_axis_angle(q_CT, axis, angle)
     distance = wp.length(wp.transform_get_translation(X_CT))
-    new_success = (
-        abs(distance) < distance_threshold and abs(float(angle)) < angle_threshold
-    )
+    new_success = abs(distance) < distance_threshold and abs(float(angle)) < angle_threshold
     reward[env_ind] = -(distance + angle)
     old_success = success[env_ind]
     if not old_success and new_success:
@@ -262,8 +246,6 @@ def randomize_states_kernel(
     angle = wp.randf(rng) * 2.0 * wp.pi
     quat = wp.quat_from_axis_angle(wp.vec3f(0.0, 0.0, 1.0), angle)
     extent = 0.5
-    trans = wp.vec3f(wp.randf(rng), wp.randf(rng), 0.0) * extent - wp.vec3f(
-        extent / 2.0, extent / 2.0, 0.0
-    )
+    trans = wp.vec3f(wp.randf(rng), wp.randf(rng), 0.0) * extent - wp.vec3f(extent / 2.0, extent / 2.0, 0.0)
     X_WB = wp.transformf(trans, quat)
     body_q_out[env_ind, TBLOCK_ID] = X_WB

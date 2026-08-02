@@ -3,30 +3,27 @@
 import numpy as np
 import cv2
 
-from sam2.sam2_image_predictor import SAM2ImagePredictor
-
 
 class SamSegmentor:
-
     def __init__(self, device="cuda"):
+        from sam2.sam2_image_predictor import SAM2ImagePredictor  # type: ignore
+
         self.device = device
-        self.predictor = SAM2ImagePredictor.from_pretrained(
-            "facebook/sam2.1-hiera-large", device=device
-        )
+        self.predictor = SAM2ImagePredictor.from_pretrained("facebook/sam2.1-hiera-large", device=device)
 
     def fill_holes(self, mask: np.ndarray):
         mask = mask.astype(np.uint8)
         inverted_mask = cv2.bitwise_not(mask)
         h, w = inverted_mask.shape[:2]
         flood_fill_mask = np.zeros((h + 2, w + 2), np.uint8)
-        cv2.floodFill(inverted_mask, flood_fill_mask, (0, 0), 255)
+        cv2.floodFill(inverted_mask, flood_fill_mask, (0, 0), [255])
         filled_region = flood_fill_mask[1:-1, 1:-1]
         final_mask = np.logical_not(filled_region).astype(bool)
         return final_mask
 
     def segment_with_gui(self, image: np.ndarray, fill_holes: bool = True) -> np.ndarray | None:
         """Blocks and returns the mask. Mask is None if no points are selected.
-        Mask is of type bool where True is foreground and False is background. 
+        Mask is of type bool where True is foreground and False is background.
         """
 
         assert image.ndim == 3, "Image must be 3D"
@@ -56,7 +53,6 @@ class SamSegmentor:
                 mask = np.zeros(image.shape[:2], dtype=bool)
             else:
                 return
-
 
             all_points = foreground_points + background_points
             labels = [1] * len(foreground_points) + [0] * len(background_points)

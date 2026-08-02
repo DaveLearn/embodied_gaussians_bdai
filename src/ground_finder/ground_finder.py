@@ -1,7 +1,6 @@
 # Copyright (c) 2025 Boston Dynamics AI Institute LLC. All rights reserved.
 
 from dataclasses import dataclass
-import typing
 
 import numpy as np
 
@@ -45,7 +44,7 @@ class GroundFinder:
         all_pointclouds = []
         for datapoint in datapoints:
             if datapoint.mask is not None:
-                datapoint.depth[datapoint.mask == False] = 0.0
+                datapoint.depth[datapoint.mask == False] = 0.0  # noqa: E712
 
             w = datapoint.depth.shape[1]
             h = datapoint.depth.shape[0]
@@ -61,11 +60,12 @@ class GroundFinder:
             if datapoint.image is not None:
                 color_image = o3d.geometry.Image(datapoint.image)
                 rgbd_image = o3d.geometry.RGBDImage.create_from_color_and_depth(
-                    color_image, depth_image, convert_rgb_to_intensity=False
+                    color_image,
+                    depth_image,
+                    depth_scale=1.0 / datapoint.depth_scale,
+                    convert_rgb_to_intensity=False,
                 )
-                pointcloud = o3d.geometry.PointCloud.create_from_rgbd_image(
-                    rgbd_image, intrinsics
-                )
+                pointcloud = o3d.geometry.PointCloud.create_from_rgbd_image(rgbd_image, intrinsics)
             else:
                 pointcloud = o3d.geometry.PointCloud.create_from_depth_image(
                     depth_image,
@@ -126,10 +126,10 @@ class GroundFinder:
         res = GroundFinderResult(plane_model, final_points)
 
         if visualize:
-            origin = o3d.geometry.TriangleMesh.create_coordinate_frame(
-                size=1.0, origin=[0, 0, 0]
-            )
+            origin = o3d.geometry.TriangleMesh.create_coordinate_frame(size=1.0, origin=[0, 0, 0])
             inlier_cloud.paint_uniform_color([0.0, 1.0, 0.0])
-            o3d.visualization.draw_geometries([plane_points, origin, *all_pointclouds])
+            o3d.visualization.draw_geometries(  # pyright: ignore[reportAttributeAccessIssue]
+                [plane_points, origin, *all_pointclouds]
+            )
 
         return res

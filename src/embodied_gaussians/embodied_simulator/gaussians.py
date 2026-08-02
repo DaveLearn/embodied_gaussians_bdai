@@ -1,6 +1,7 @@
 # Copyright (c) 2025 Boston Dynamics AI Institute LLC. All rights reserved.
 
 from dataclasses import dataclass
+from typing import Union
 import torch
 
 
@@ -13,22 +14,22 @@ class GaussianState:
     scale_log: torch.Tensor  # (n_gaussians, 3)
 
     @property
-    def colors(self):
+    def colors(self) -> torch.Tensor:
         return self.colors_logits.sigmoid()
 
     @property
-    def opacities(self):
+    def opacities(self) -> torch.Tensor:
         return self.opacities_logits.sigmoid()
 
     @property
-    def scales(self):
+    def scales(self) -> torch.Tensor:
         return self.scale_log.exp()
 
     @property
-    def num_gaussians(self):
+    def num_gaussians(self) -> int:
         return self.means.shape[0]
 
-    def copy(self, src: "GaussianState"):
+    def copy(self, src: "GaussianState") -> None:
         with torch.no_grad():
             self.means.copy_(src.means)
             self.quats.copy_(src.quats)
@@ -36,7 +37,7 @@ class GaussianState:
             self.opacities_logits.copy_(src.opacities_logits)
             self.scale_log.copy_(src.scale_log)
 
-    def clone(self):
+    def clone(self) -> "GaussianState":
         with torch.no_grad():
             return GaussianState(
                 means=self.means.clone(),
@@ -46,7 +47,7 @@ class GaussianState:
                 scale_log=self.scale_log.clone(),
             )
 
-    def slice(self, slice_obj):
+    def slice(self, slice_obj: Union[int, slice, torch.Tensor]) -> "GaussianState":
         with torch.no_grad():
             return GaussianState(
                 means=self.means[slice_obj],
@@ -56,7 +57,7 @@ class GaussianState:
                 scale_log=self.scale_log[slice_obj],
             )
 
-    def reshape(self, shape):
+    def reshape(self, *shape: int) -> "GaussianState":
         with torch.no_grad():
             return GaussianState(
                 means=self.means.reshape(*shape, 3),
@@ -65,7 +66,8 @@ class GaussianState:
                 opacities_logits=self.opacities_logits.reshape(*shape),
                 scale_log=self.scale_log.reshape(*shape, 3),
             )
-    
+
+
 @dataclass
 class GaussianModel:
     means: torch.Tensor  # (n_gaussians, 3)
@@ -76,14 +78,14 @@ class GaussianModel:
     body_ids: torch.Tensor  # (n_gaussians,)
 
     @property
-    def num_gaussians(self):
+    def num_gaussians(self) -> int:
         return self.means.shape[0]
 
     @property
-    def device(self):
+    def device(self) -> torch.device:
         return self.means.device
 
-    def state(self):
+    def state(self) -> GaussianState:
         return GaussianState(
             means=self.means.clone(),
             quats=self.quats.clone(),
@@ -92,7 +94,7 @@ class GaussianModel:
             scale_log=self.scales.log(),
         )
 
-    def copy_from_state(self, state: GaussianState):
+    def copy_from_state(self, state: GaussianState) -> None:
         with torch.no_grad():
             # self.means.copy_(state.means)
             # self.quats.copy_(state.quats)

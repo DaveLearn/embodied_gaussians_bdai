@@ -1,10 +1,16 @@
 # Copyright (c) 2025 Boston Dynamics AI Institute LLC. All rights reserved.
+# pyright: reportArgumentType=false, reportCallIssue=false
 
+from typing import cast
 import numpy as np
 import warp as wp
 import warp.sim
 
 from embodied_gaussians.utils.physics_utils import transform_from_matrix, save_builder, load_builder
+
+
+class EmbodiedGaussiansModel(warp.sim.Model):
+    gravity_factor: wp.array
 
 
 class ModelBuilder(warp.sim.ModelBuilder):
@@ -38,22 +44,23 @@ class ModelBuilder(warp.sim.ModelBuilder):
         end_joint = len(self.joint_q)
         num_joints = end_joint - start_joint
         if initial_joints is not None:
-            assert len(initial_joints) <= num_joints, (
-                f"Initial joints must have length {num_joints}"
-            )
+            assert len(initial_joints) <= num_joints, f"Initial joints must have length {num_joints}"
             num_joints_given = len(initial_joints)
             self.joint_q[start_joint:num_joints_given] = initial_joints
 
-    def finalize(self, device=None, requires_grad=False):
+    def finalize(self, device=None, requires_grad=False) -> EmbodiedGaussiansModel:
         res = super().finalize(device, requires_grad)
+        res = cast(EmbodiedGaussiansModel, res)
         res.gravity_factor = wp.ones(
-            self.body_count, dtype=wp.float32, requires_grad=requires_grad
+            self.body_count,
+            dtype=wp.float32,  # pyright: ignore[reportArgumentType]
+            requires_grad=requires_grad,  # type: ignore
         )
         return res
-    
+
     def save_to_file(self, file_path: str):
         save_builder(file_path, self)
-    
+
     @staticmethod
     def load_from_file(file_path: str):
         return load_builder(file_path)

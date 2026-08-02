@@ -25,7 +25,7 @@ from embodied_gaussians.physics_simulator.builder import ModelBuilder
 from embodied_gaussians.physics_simulator.simulator import Simulator
 from embodied_gaussians.physics_simulator.saver import Saver
 from embodied_gaussians.physics_simulator.loader import Loader
-from embodied_gaussians.embodied_simulator.saver  import EmbodiedGaussiansSaver
+from embodied_gaussians.embodied_simulator.saver import EmbodiedGaussiansSaver
 from embodied_gaussians.utils.utils import read_extrinsics, read_ground
 from embodied_gaussians.environments.virtual_cameras import VirtualCamerasBuilder, VirtualCameras
 
@@ -43,7 +43,7 @@ __all__ = [
     "EmbodiedGaussiansBuilder",
     "EmbodiedGaussiansSaver",
     "EmbodiedGaussiansLoader",
-    "FramesBuilder",    
+    "FramesBuilder",
     "DatasetManager",
     "read_extrinsics",
     "read_ground",

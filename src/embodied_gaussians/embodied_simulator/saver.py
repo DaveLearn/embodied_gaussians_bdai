@@ -1,3 +1,4 @@
+# type: ignore
 # Copyright (c) 2025 Boston Dynamics AI Institute LLC. All rights reserved.
 
 import logging
@@ -31,28 +32,18 @@ class EmbodiedGaussiansSaver(Saver):
         t = self.current_index
         g = state.num_gaussians
         if g > 0 and self.save_gaussian_state:
-            s = root.create_array(
-                name="gaussian_state_means", shape=(t, g, 3), dtype="f4"
-            )
+            s = root.create_array(name="gaussian_state_means", shape=(t, g, 3), dtype="f4")
             s[:] = self.gaussian_state_means.cpu().numpy()
-            s = root.create_array(
-                name="gaussian_state_quats", shape=(t, g, 4), dtype="f4"
-            )
+            s = root.create_array(name="gaussian_state_quats", shape=(t, g, 4), dtype="f4")
             s[:] = self.gaussian_state_quats.cpu().numpy()
 
-            s = root.create_array(
-                name="gaussian_state_colors_logits", shape=(t, g, 3), dtype="f4"
-            )
+            s = root.create_array(name="gaussian_state_colors_logits", shape=(t, g, 3), dtype="f4")
             s[:] = self.gaussian_state_colors_logits.cpu().numpy()
 
-            s = root.create_array(
-                name="gaussian_state_opacities_logits", shape=(t, g), dtype="f4"
-            )
+            s = root.create_array(name="gaussian_state_opacities_logits", shape=(t, g), dtype="f4")
             s[:] = self.gaussian_state_opacities_logits.cpu().numpy()
 
-            s = root.create_array(
-                name="gaussian_state_scale_log", shape=(t, g, 3), dtype="f4"
-            )
+            s = root.create_array(name="gaussian_state_scale_log", shape=(t, g, 3), dtype="f4")
             s[:] = self.gaussian_state_scale_log.cpu().numpy()
 
     @override
@@ -63,21 +54,11 @@ class EmbodiedGaussiansSaver(Saver):
         g = b.num_gaussians()
         t = max_frames
         if g > 0:
-            self.gaussian_state_means = torch.zeros(
-                (t, g, 3), dtype=torch.float32, device=device
-            )
-            self.gaussian_state_quats = torch.zeros(
-                (t, g, 4), dtype=torch.float32, device=device
-            )
-            self.gaussian_state_colors_logits = torch.zeros(
-                (t, g, 3), dtype=torch.float32, device=device
-            )
-            self.gaussian_state_opacities_logits = torch.zeros(
-                (t, g), dtype=torch.float32, device=device
-            )
-            self.gaussian_state_scale_log = torch.zeros(
-                (t, g, 3), dtype=torch.float32, device=device
-            )
+            self.gaussian_state_means = torch.zeros((t, g, 3), dtype=torch.float32, device=device)
+            self.gaussian_state_quats = torch.zeros((t, g, 4), dtype=torch.float32, device=device)
+            self.gaussian_state_colors_logits = torch.zeros((t, g, 3), dtype=torch.float32, device=device)
+            self.gaussian_state_opacities_logits = torch.zeros((t, g), dtype=torch.float32, device=device)
+            self.gaussian_state_scale_log = torch.zeros((t, g, 3), dtype=torch.float32, device=device)
         super().allocate_demo(max_frames, device)
 
     @override

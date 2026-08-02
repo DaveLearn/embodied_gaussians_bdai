@@ -1,15 +1,19 @@
 # Copyright (c) 2025 Boston Dynamics AI Institute LLC. All rights reserved.
 
 import json
+import logging
 import typing
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Dict, Tuple, Any
 
 import numpy as np
-from pydrake.trajectories import PiecewisePolynomial
-from typing_extensions import override
 
 from embodied_gaussians import Body, EmbodiedGaussiansEnvironment, FramesBuilder, EmbodiedGaussiansLoader, OfflineCameras
+from embodied_gaussians.utils.timestamps import timestamp_to_index
+
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -18,14 +22,13 @@ class RobotData:
     control_timestamps: np.ndarray
     states: list[dict[str, typing.Any]]
     states_timestamps: np.ndarray
-    state_index_look_up: PiecewisePolynomial
-    control_index_look_up: PiecewisePolynomial
+
 
 @dataclass
 class CameraData:
     name: str
     X_WC: np.ndarray  # Camera pose in world frame
-    K: np.ndarray     # Camera intrinsics
+    K: np.ndarray  # Camera intrinsics
     resolution: tuple[int, int]
     video_path: Path
     timestamps: np.ndarray
@@ -37,7 +40,7 @@ class DatasetManager:
         path: Path,
         camera_file: str | None = "cameras.json",
         load_frames: bool = True,
-    ):
+    ) -> None:
         self.path = path
         self.camera_file = camera_file
         self.physics_loader: EmbodiedGaussiansLoader | None = None
@@ -47,25 +50,25 @@ class DatasetManager:
         self.camera_data_found = False
         self.initialize()
 
-    def first_timestamp(self):
+    def first_timestamp(self) -> float:
         min_timestamp = 0.0
         for r in self.robots.values():
             min_timestamp = min(r.states_timestamps[0], min_timestamp)
         return min_timestamp
 
-    def last_timestamp(self):
+    def last_timestamp(self) -> float:
         max_timestamp = 0.0
         for r in self.robots.values():
             max_timestamp = max(r.states_timestamps[-1], max_timestamp)
         return max_timestamp
 
-    def duration(self):
+    def duration(self) -> float:
         return self.last_timestamp() - self.first_timestamp()
 
-    def can_build_environment(self):
+    def can_build_environment(self) -> bool:
         return self.physics_loader is not None
 
-    def build_environment(self):
+    def build_environment(self) -> EmbodiedGaussiansEnvironment:
         assert self.physics_loader
         builder = self.physics_loader.builder
         env = EmbodiedGaussiansEnvironment(builder)  # type: ignore
@@ -74,7 +77,7 @@ class DatasetManager:
         env.stash_state()
         return env
 
-    def initialize(self):
+    def initialize(self) -> None:
         robots_path = self.path / "robots.json"
         if robots_path.exists():
             with open(robots_path, "r") as f:
@@ -103,18 +106,10 @@ class DatasetManager:
                     resolution = tuple(md["resolution"])
                     video_path = path / camera_data["video_path"]
                     timestamps = np.array(md["timestamps"], dtype=np.float32)
-                    
-                    self.cameras.append(CameraData(
-                        name=serial,
-                        X_WC=_WC,
-                        K=K,
-                        resolution=resolution,
-                        video_path=video_path,
-                        timestamps=timestamps
-                    ))
 
+                    self.cameras.append(CameraData(name=serial, X_WC=_WC, K=K, resolution=resolution, video_path=video_path, timestamps=timestamps))
 
-        self.robots = {}
+        self.robots: Dict[str, RobotData] = {}
         for robot_name, r in rs.items():
             ct = np.array(r["control_timestamps"], dtype=np.float32)
             st = np.array(r["states_timestamps"], dtype=np.float32)
@@ -123,23 +118,14 @@ class DatasetManager:
                 control_timestamps=ct,
                 states=r["states"],
                 states_timestamps=st,
-                state_index_look_up=PiecewisePolynomial.ZeroOrderHold(
-                    st,
-                    np.arange(0, len(st)).astype(np.float32).reshape(-1, 1).T,
-                ),
-                control_index_look_up=PiecewisePolynomial.ZeroOrderHold(
-                    ct,
-                    np.arange(0, len(ct)).astype(np.float32).reshape(-1, 1).T,
-                ),
             )
         self.try_load_physics()
-        if self.load_frames and self.camera_data_found:
-            self.offline_cameras = OfflineCameras.from_dataset(
-                self.path / self.camera_file
-            )
+        if self.load_frames and self.camera_data_found and self.camera_file:
+            self.offline_cameras = OfflineCameras.from_dataset(self.path / self.camera_file)
             self.initialize_frames()
 
-    def initialize_frames(self):
+    def initialize_frames(self) -> None:
+        assert self.offline_cameras
         cameras = self.offline_cameras
         w, h = cameras.resolution()
         frame_builder = FramesBuilder(width=w, height=h)
@@ -150,7 +136,8 @@ class DatasetManager:
         self.frames = frame_builder.finalize()
         self.update_frames(0.0)
 
-    def update_frames(self, timestamp: float):
+    def update_frames(self, timestamp: float) -> None:
+        assert self.offline_cameras
         cameras = self.offline_cameras
         # ind = self.physics_loader.get_index_at_timestamp(timestamp)
         # timestamp = ind * 1 / 60.0
@@ -175,18 +162,18 @@ class DatasetManager:
                 return camera
         raise KeyError(f"Camera with name {name} not found")
 
-    def camera_timeseries(self, index: int):
+    def camera_timeseries(self, index: int) -> Tuple[np.ndarray, np.ndarray]:
         camera = self.get_camera(index)
         num_steps = len(camera.timestamps)
         return camera.timestamps, np.arange(0, num_steps).reshape(-1, 1, 1)
 
-    def try_load_physics(self):
+    def try_load_physics(self) -> None:
         physics_path = self.path / "physics.zarr"
         if physics_path.exists():
             self.physics_loader = EmbodiedGaussiansLoader()
             self.physics_loader.load(physics_path)
         else:
-            print(f"Physics file not found at {physics_path}")
+            logger.info("Optional physics file not found at %s", physics_path)
 
     def timestamps(self) -> np.ndarray:
         assert self.physics_loader
@@ -195,17 +182,13 @@ class DatasetManager:
     def progress(self) -> np.ndarray:
         assert self.physics_loader
         num_steps = self.physics_loader.num_steps
-        progress = np.linspace(
-            0.0, 1.0, self.physics_loader.num_steps, dtype=np.float32
-        ).reshape(num_steps, 1, 1)
+        progress = np.linspace(0.0, 1.0, self.physics_loader.num_steps, dtype=np.float32).reshape(num_steps, 1, 1)
         return progress
 
     def joints_desired(self) -> np.ndarray:
         assert self.physics_loader
         num_steps = self.physics_loader.num_steps
-        joints_desired = self.physics_loader.control_joint_act[:].reshape(
-            num_steps, -1, 1
-        )  # type: ignore
+        joints_desired = self.physics_loader.control_joint_act[:].reshape(num_steps, -1, 1)  # type: ignore
         return joints_desired
 
     def body_q(self) -> np.ndarray:
@@ -218,21 +201,21 @@ class DatasetManager:
         num_steps = self.physics_loader.num_steps
         return self.physics_loader.state_joint_q[:].reshape(num_steps, -1, 1)
 
-    def panda_state(self, timestamp: float):
+    def panda_state(self, timestamp: float) -> Dict[str, Any]:
         res = {}
         for robot_name, r in self.robots.items():
-            index = int(r.state_index_look_up.value(timestamp))
+            index = timestamp_to_index(r.states_timestamps, timestamp)
             res[robot_name] = r.states[index]
         return res
 
-    def controller_state(self, timestamp: float):
+    def controller_state(self, timestamp: float) -> Dict[str, Any]:
         res = {}
         for robot_name, r in self.robots.items():
-            index = int(r.control_index_look_up.value(timestamp))
+            index = timestamp_to_index(r.control_timestamps, timestamp)
             res[robot_name] = r.control[index]
         return res
 
-    def build_default_environment(self):
+    def build_default_environment(self) -> None:
         raise NotImplementedError()
 
 

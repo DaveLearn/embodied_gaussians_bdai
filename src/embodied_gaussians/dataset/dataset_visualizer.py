@@ -7,7 +7,7 @@ import trio
 import trio.testing
 import tyro
 import warp as wp
-from marsoom import guizmo, imgui
+from marsoom import imgui
 from trio_util import periodic
 from typing_extensions import override
 
@@ -18,7 +18,6 @@ from embodied_gaussians.vis import EmbodiedGUI
 @dataclass
 class Params:
     path: tyro.conf.PositionalRequiredArgs[Path]
-
 
 
 class DatasetVisualizer(EmbodiedGUI):
@@ -40,9 +39,7 @@ class DatasetVisualizer(EmbodiedGUI):
 
     def load_demo(self, demo_dir: Path):
         self.current_demo_path = demo_dir
-        self.dataset = dataset = DatasetManager(
-            demo_dir, camera_file="cameras.json"
-        )
+        self.dataset = dataset = DatasetManager(demo_dir, camera_file="cameras.json")
         if dataset.can_build_environment():
             env = dataset.build_environment()
             self.current_step = 0

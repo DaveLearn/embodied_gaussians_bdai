@@ -1,3 +1,4 @@
+# type: ignore
 # Copyright (c) 2025 Boston Dynamics AI Institute LLC. All rights reserved.
 
 from pathlib import Path
@@ -12,6 +13,7 @@ from embodied_gaussians.embodied_simulator.simulator import (
     EmbodiedGaussianState,
     update_gaussian_transforms,
 )
+from embodied_gaussians.utils.timestamps import timestamp_to_index
 
 
 class EmbodiedGaussiansLoader(Loader):
@@ -34,20 +36,15 @@ class EmbodiedGaussiansLoader(Loader):
                 self.gaussian_state_means = root["gaussian_state_means"]
                 self.gaussian_state_quats = root["gaussian_state_quats"]
                 self.gaussian_state_colors_logits = root["gaussian_state_colors_logits"]
-                self.gaussian_state_opacities_logits = root[
-                    "gaussian_state_opacities_logits"
-                ]
+                self.gaussian_state_opacities_logits = root["gaussian_state_opacities_logits"]
                 self.gaussian_state_scale_log = root["gaussian_state_scale_log"]
             else:
                 self.load_gaussians_from_builder()
 
         return root
 
-    def get_embodied_gaussian_state_at_timestamp(
-        self, timestamp: float, device: str = "cuda"
-    ):
-        assert self.index_look_up
-        index = int(self.index_look_up.value(timestamp))
+    def get_embodied_gaussian_state_at_timestamp(self, timestamp: float, device: str = "cuda"):
+        index = timestamp_to_index(self.timestamps, timestamp)
         return self.get_embodied_gaussian_state_at_index(index, device)
 
     def load_gaussians_from_builder(self, device: str = "cuda"):
@@ -59,25 +56,11 @@ class EmbodiedGaussiansLoader(Loader):
         b: EmbodiedGaussiansBuilder = self.builder  # type: ignore
         g = b.num_gaussians()
         assert g > 0 and self.load_gaussian_states
-        gaussian_state_means = (
-            torch.from_numpy(self.gaussian_state_means[index]).to(device).float()
-        )
-        gaussian_state_quats = (
-            torch.from_numpy(self.gaussian_state_quats[index]).to(device).float()
-        )
-        gaussian_state_colors_logits = (
-            torch.from_numpy(self.gaussian_state_colors_logits[index])
-            .to(device)
-            .float()
-        )
-        gaussian_state_opacities_logits = (
-            torch.from_numpy(self.gaussian_state_opacities_logits[index])
-            .to(device)
-            .float()
-        )
-        gaussian_state_scale_log = (
-            torch.from_numpy(self.gaussian_state_scale_log[index]).to(device).float()
-        )
+        gaussian_state_means = torch.from_numpy(self.gaussian_state_means[index]).to(device).float()
+        gaussian_state_quats = torch.from_numpy(self.gaussian_state_quats[index]).to(device).float()
+        gaussian_state_colors_logits = torch.from_numpy(self.gaussian_state_colors_logits[index]).to(device).float()
+        gaussian_state_opacities_logits = torch.from_numpy(self.gaussian_state_opacities_logits[index]).to(device).float()
+        gaussian_state_scale_log = torch.from_numpy(self.gaussian_state_scale_log[index]).to(device).float()
         gaussian_state = GaussianState(
             means=gaussian_state_means,
             quats=gaussian_state_quats,
@@ -96,9 +79,7 @@ class EmbodiedGaussiansLoader(Loader):
         if self.has_gaussians_per_timestep:
             gaussian_state = self.get_gaussian_state_at_index(index, device)
         else:
-            update_gaussian_transforms(
-                self.gaussian_model, wp.to_torch(state.body_q), self.gaussian_state
-            )
+            update_gaussian_transforms(self.gaussian_model, wp.to_torch(state.body_q), self.gaussian_state)
             gaussian_state = self.gaussian_state
 
         return EmbodiedGaussianState(

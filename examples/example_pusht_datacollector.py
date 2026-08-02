@@ -9,7 +9,7 @@ import torch
 import trio
 import tyro
 import warp as wp
-from marsoom import guizmo, imgui
+from marsoom import imgui
 from trio_util import periodic
 
 
@@ -143,11 +143,11 @@ class CollectGUI(marsoom.Window):
 
     def render(self):
         self.keyboard()
-        
+
         # Main control window with better styling and organization
         imgui.set_next_window_size((400, 300), cond=imgui.Cond_.first_use_ever)
         imgui.begin("Control Panel", flags=imgui.WindowFlags_.no_collapse)
-        
+
         # Status information in a colored frame
         imgui.push_style_color(imgui.Col_.frame_bg, imgui.ImVec4(0.2, 0.2, 0.2, 1.0))
         imgui.begin_child("Status", (0, 100), True)
@@ -162,19 +162,19 @@ class CollectGUI(marsoom.Window):
         imgui.pop_style_color()
 
         imgui.spacing()
-        
+
         # Control buttons in a grid layout
         button_size = (imgui.get_content_region_avail()[0] / 2 - 5, 30)
-        
+
         # Save Demo button with color
         imgui.push_style_color(imgui.Col_.button, imgui.ImVec4(0.2, 0.6, 0.2, 1.0))
         imgui.push_style_color(imgui.Col_.button_hovered, imgui.ImVec4(0.3, 0.7, 0.3, 1.0))
         if imgui.button("Save Demo##save", button_size):
             self.save_demo()
         imgui.pop_style_color(2)
-        
+
         imgui.same_line()
-        
+
         # Reset button with color
         imgui.push_style_color(imgui.Col_.button, imgui.ImVec4(0.7, 0.2, 0.2, 1.0))
         imgui.push_style_color(imgui.Col_.button_hovered, imgui.ImVec4(0.8, 0.3, 0.3, 1.0))
@@ -188,7 +188,7 @@ class CollectGUI(marsoom.Window):
         # Settings section
         imgui.text("Settings")
         imgui.separator()
-        
+
         # Auto-reset checkbox with better styling
         imgui.push_style_color(imgui.Col_.frame_bg, imgui.ImVec4(0.2, 0.2, 0.2, 1.0))
         imgui.push_style_color(imgui.Col_.frame_bg_hovered, imgui.ImVec4(0.3, 0.3, 0.3, 1.0))
@@ -214,14 +214,13 @@ class CollectGUI(marsoom.Window):
         # Viewers
         imgui.set_next_window_size((600, 400), cond=imgui.Cond_.first_use_ever)
         self.draw_2d_viewer()
-        
+
         imgui.set_next_window_size((600, 400), cond=imgui.Cond_.first_use_ever)
         imgui.begin("3D Viewer", flags=imgui.WindowFlags_.no_collapse)
         with self.sim_renderer.draw(True):
             self.sim_renderer.render_meshes()
         self.sim_renderer.process_nav()
         imgui.end()
-
 
 
 async def main():

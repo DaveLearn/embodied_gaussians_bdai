@@ -9,7 +9,7 @@ import torch
 import trio
 import tyro
 import warp as wp
-from marsoom import guizmo, imgui
+from marsoom import imgui
 from trio_util import periodic
 
 from embodied_gaussians import PhysicsSettings
@@ -21,16 +21,18 @@ from sim_environments.pusht import PushTEnvironment
 @dataclass
 class Settings:
     """Configuration settings for the PushT simulation environment."""
+
     physics: PhysicsSettings = field(default_factory=lambda: PhysicsSettings())
 
 
 class PushTGUI(marsoom.Window):
     """
     GUI application for the PushT environment, demonstrating object manipulation.
-    
+
     This class provides a 2D and 3D visualization of a robotic pushing task,
     where a pusher can interact with a T-shaped block.
     """
+
     def __init__(self, settings: Settings):
         super().__init__(caption="PushT")
         self.settings = settings
@@ -44,19 +46,20 @@ class PushTGUI(marsoom.Window):
         # Graphics and simulation state
         self.batch = pyglet.graphics.Batch()
         self.target_transform = wp.transformf((0.0, 0.0, 0.0), (0.0, 0.0, 0.0, 1.0))
-        
+
         # Control parameters
         self.angle_threshold_degrees = 0.8  # Maximum allowed angular deviation
-        self.distance_threshold = 0.01      # Maximum allowed positional error (meters)
-        
+        self.distance_threshold = 0.01  # Maximum allowed positional error (meters)
+
         # State variables
-        self.press_latch = False            # Track if mouse button is being held
+        self.press_latch = False  # Track if mouse button is being held
         self.actions = self.environment.default_actions()
         self.observations = self.environment.observe()
         self.X_WO = self.environment.simulator().get_body_q(3)
 
     async def run(self):
         """Run the simulation and rendering loops concurrently."""
+
         async def physics_loop():
             """Updates physics simulation at a fixed timestep."""
             dt = self.settings.physics.dt
@@ -79,7 +82,7 @@ class PushTGUI(marsoom.Window):
     def set_joints(self, x: float, y: float):
         """
         Set the desired position for the pusher.
-        
+
         Args:
             x: Target x-coordinate in world space
             y: Target y-coordinate in world space
@@ -91,14 +94,14 @@ class PushTGUI(marsoom.Window):
         """Render the 2D interactive view of the environment."""
         imgui.begin("Control Plane")
         self.viewer_2d.draw()
-        
+
         # Draw target transform
         self.viewer_2d.draw_tblock(
             wp.transform_get_translation(self.target_transform),
             wp.transform_get_rotation(self.target_transform),
             (0.0, 1.0, 0.0, 0.7),  # Semi-transparent green
         )
-        
+
         # Get state for the first environment (env=0)
         env = 0
         joints = self.observations.pusher_positions.cpu().numpy()[env]
@@ -107,18 +110,18 @@ class PushTGUI(marsoom.Window):
 
         # Draw current state
         self.viewer_2d.draw_tblock(tblock_transform[:3], tblock_transform[3:])
-        
+
         # Draw desired and current pusher positions
         hovered = self.viewer_2d.circle(
             position=desired_joints,
-            color=(0, 1, 0, 1),    # Green for desired position
+            color=(0, 1, 0, 1),  # Green for desired position
             radius=0.015,
             thickness=2,
             unit=marsoom.eViewerUnit.UNIT,
         )
         self.viewer_2d.circle(
             position=joints,
-            color=(0, 0, 1, 1),    # Blue for current position
+            color=(0, 0, 1, 1),  # Blue for current position
             radius=0.02,
             thickness=2,
             unit=marsoom.eViewerUnit.UNIT,
@@ -145,7 +148,7 @@ class PushTGUI(marsoom.Window):
         # Main control window with better styling and organization
         imgui.set_next_window_size((400, 300), cond=imgui.Cond_.first_use_ever)
         imgui.begin("Control Panel", flags=imgui.WindowFlags_.no_collapse)
-        
+
         # Status information in a colored frame
         imgui.push_style_color(imgui.Col_.frame_bg, imgui.ImVec4(0.2, 0.2, 0.2, 1.0))
         imgui.begin_child("Status", (0, 100), True)
@@ -153,7 +156,7 @@ class PushTGUI(marsoom.Window):
         imgui.separator()
         t = self.environment.time()
         imgui.text(f"Simulation Time: {t:.2f}s")
-        
+
         # Get current state info
         obs = self.observations
         tblock_transform = obs.tblock_transforms[0].cpu().numpy()
@@ -162,7 +165,7 @@ class PushTGUI(marsoom.Window):
         imgui.pop_style_color()
 
         imgui.spacing()
-        
+
         # Reset button with color
         button_size = (imgui.get_content_region_avail()[0], 30)
         imgui.push_style_color(imgui.Col_.button, imgui.ImVec4(0.7, 0.2, 0.2, 1.0))
@@ -174,13 +177,13 @@ class PushTGUI(marsoom.Window):
         # Help text
         imgui.spacing()
         imgui.text_wrapped("Click and drag in the 2D view to control the pusher position.")
-        
+
         imgui.end()
 
         # Viewers with consistent sizing
         imgui.set_next_window_size((600, 400), cond=imgui.Cond_.first_use_ever)
         self.draw_2d_viewer()
-        
+
         imgui.set_next_window_size((600, 400), cond=imgui.Cond_.first_use_ever)
         imgui.begin("3D Viewer", flags=imgui.WindowFlags_.no_collapse)
         with self.sim_renderer.draw(True):

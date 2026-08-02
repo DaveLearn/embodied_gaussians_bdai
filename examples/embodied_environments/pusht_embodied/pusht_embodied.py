@@ -9,7 +9,14 @@ import warp.sim
 import torch
 
 
-from embodied_gaussians import (Body, Ground, VirtualCamerasBuilder, EmbodiedGaussiansBuilder, EmbodiedGaussiansEnvironment, read_extrinsics, read_ground)
+from embodied_gaussians import (
+    Body,
+    Ground,
+    VirtualCamerasBuilder,
+    EmbodiedGaussiansBuilder,
+    EmbodiedGaussiansEnvironment,
+    read_ground,
+)
 
 Q_START = np.array(
     [
@@ -27,6 +34,10 @@ GROUND_PATH = current_dir / Path("environment/ground_plane.json")
 EXTRINSICS_PATH = current_dir / Path("environment/extrinsics.json")
 BODY_NAME = "tblock"
 BODY_ID = warp.constant(13)
+# The reconstructed collision spheres extend about 1.8 mm below the fitted
+# visual ground plane. Keep the visual geometry aligned with the recording and
+# lower only the physics plane enough to avoid an energetic reset correction.
+PHYSICS_GROUND_CLEARANCE = 0.003
 
 
 def get_body(name: str) -> Body:
@@ -63,13 +74,13 @@ def build_environment(num_envs: int = 1, add_gaussians: bool = True):
             collapse_fixed_joints=False,
         )
 
-    bid = builder.add_rigid_body(body, add_gaussians=add_gaussians)
+    bid = builder.add_rigid_body(body, add_gaussians=add_gaussians)  # noqa: F841
     if add_gaussians:
         builder.add_visual_body(ground_body)
     final_builder = EmbodiedGaussiansBuilder()
-    final_builder.set_ground_plane(ground.normal(), ground.offset())
     for env in range(num_envs):
         final_builder.add_builder(builder)
+    final_builder.set_ground_plane(ground.normal(), ground.offset() - PHYSICS_GROUND_CLEARANCE)
     env = EmbodiedGaussiansEnvironment(final_builder)
     warp.to_torch(env.sim.model.gravity_factor).reshape(num_envs, -1)[:, :13] = 0.0
     q_start = torch.from_numpy(Q_START).float()

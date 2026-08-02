@@ -11,7 +11,7 @@ from tqdm import tqdm
 import torch
 import warp as wp
 
-from gsplat.rendering import rasterization
+from embodied_gaussians.utils.gsplat import rasterization
 
 from embodied_gaussians.scene_builders.domain import (
     Gaussians,
@@ -30,13 +30,10 @@ logger = logging.getLogger(__name__)
 class PointCloudBodyBuilderSettings:
     max_depth: float = 2.0  # Maximum depth to consider
     training_iterations: int = 4000  # Number of iterations to optimize the particles
-    training_learning_rates: GaussianLearningRates = field(
-        default_factory=lambda: GaussianLearningRates()
-    )
+    training_learning_rates: GaussianLearningRates = field(default_factory=lambda: GaussianLearningRates())
     opacity_threshold: float = 0.5  # Opacity threshold for optimization
     min_scale: tuple[float, float, float] = (0.01, 0.01, 0.01)
     max_scale: tuple[float, float, float] = (0.03, 0.03, 0.03)
-    max_depth: float = 2.0
     """
     If true, the gaussians will be disks. If false, the gaussians will be ellipsoids. This used to make sure the ground is flat.
     """
@@ -57,7 +54,7 @@ class PointCloudBodyBuilder:
         if visualize:
             pcd = o3d.geometry.PointCloud()
             pcd.points = o3d.utility.Vector3dVector(points)
-            o3d.visualization.draw_geometries([pcd])
+            o3d.visualization.draw_geometries([pcd])  # pyright: ignore[reportAttributeAccessIssue]
 
         # # ================ Step 1: Train Gaussians =================
         gaussians = PointCloudBodyBuilder._train_gaussians(
@@ -72,7 +69,7 @@ class PointCloudBodyBuilder:
         )
 
         if visualize:
-            o3d.visualization.draw_geometries(
+            o3d.visualization.draw_geometries(  # pyright: ignore[reportAttributeAccessIssue]
                 [
                     o3d.geometry.TriangleMesh.create_coordinate_frame(0.1),
                     *ellipsoid_meshes(gaussians),
@@ -103,16 +100,16 @@ class PointCloudBodyBuilder:
         params = PointCloudBodyBuilder._create_initial_gaussian_state(initial_points)
         # with torch.no_grad():
         #     params["means"] += torch.randn_like(params["means"]) * 0.1
-        initial_gaussians = Gaussians(
-            means=params["means"].detach().cpu().numpy(),
-            quats=GaussianActivations.quat(params["quats"]).detach().cpu().numpy(),
-            scales=GaussianActivations.scale(params["scales"]).detach().cpu().numpy(),
-            opacities=GaussianActivations.opacity(params["opacities"])
-            .detach()
-            .cpu()
-            .numpy(),
-            colors=GaussianActivations.color(params["colors"]).detach().cpu().numpy(),
-        )
+        # initial_gaussians = Gaussians(
+        #    means=params["means"].detach().cpu().numpy(),
+        #    quats=GaussianActivations.quat(params["quats"]).detach().cpu().numpy(),
+        #    scales=GaussianActivations.scale(params["scales"]).detach().cpu().numpy(),
+        #    opacities=GaussianActivations.opacity(params["opacities"])
+        #    .detach()
+        #    .cpu()
+        #    .numpy(),
+        #    colors=GaussianActivations.color(params["colors"]).detach().cpu().numpy(),
+        # )
 
         # This takes a long time to run because it's a lot of gaussians
         # if visualize:
@@ -124,9 +121,10 @@ class PointCloudBodyBuilder:
         #     )
 
         datapoints = [datapoints[0]]  # , datapoints[1]]#, datapoints[2]]
-        gt_data = PointCloudBodyBuilder._get_rasterization_groundtruth(
-            datapoints, max_depth=max_depth
-        )
+        gt_data = PointCloudBodyBuilder._get_rasterization_groundtruth(datapoints, max_depth=max_depth)
+        groundtruth = None
+        groundtruth_depth = None
+
         if visualize:
             # concat all depth
             depths = []
@@ -150,12 +148,8 @@ class PointCloudBodyBuilder:
                 "scales": learning_rates.scales,
             },
         )
-        inv_min_scale = GaussianActivations.inv_scale(
-            torch.tensor(min_scale).cuda()
-        )
-        inv_max_scale = GaussianActivations.inv_scale(
-            torch.tensor(max_scale).cuda()
-        )
+        inv_min_scale = GaussianActivations.inv_scale(torch.tensor(min_scale).cuda())
+        inv_max_scale = GaussianActivations.inv_scale(torch.tensor(max_scale).cuda())
         backgrounds = torch.rand((num_iterations, 3)).float().cuda()
         num_images = gt_data.images.shape[0]
 
@@ -179,9 +173,7 @@ class PointCloudBodyBuilder:
             )
 
             w_photmetric = 1.0
-            loss = w_photmetric * torch.nn.functional.mse_loss(
-                render_colors[..., :3], gt_data.images
-            )
+            loss = w_photmetric * torch.nn.functional.mse_loss(render_colors[..., :3], gt_data.images)
             # for j in range(len(gt_data.depth_masks)):
             #     depth_mask = gt_data.depth_masks[j]
             #     valid_depth_pixels = gt_data.valid_depth_pixels[j]
@@ -197,6 +189,8 @@ class PointCloudBodyBuilder:
 
             if visualize and i % 100 == 0:
                 # print(float(loss))
+                assert groundtruth is not None
+                assert groundtruth_depth is not None
                 num_images = gt_data.images.shape[0]
                 rgb = render_colors[..., :3].detach().cpu().numpy()
                 depth = render_colors[..., -1].detach().cpu().numpy()
@@ -218,19 +212,14 @@ class PointCloudBodyBuilder:
 
         return Gaussians(
             means=params["means"].detach().cpu().numpy(),
-            quats=GaussianActivations.quat(params["quats"]).detach().cpu().numpy(),
-            scales=GaussianActivations.scale(params["scales"]).detach().cpu().numpy(),
-            opacities=GaussianActivations.opacity(params["opacities"])
-            .detach()
-            .cpu()
-            .numpy(),
-            colors=GaussianActivations.color(params["colors"]).detach().cpu().numpy(),
+            quats=GaussianActivations.quat(params["quats"]).detach().cpu().numpy().tolist(),
+            scales=GaussianActivations.scale(params["scales"]).detach().cpu().numpy().tolist(),
+            opacities=GaussianActivations.opacity(params["opacities"]).detach().cpu().numpy().tolist(),
+            colors=GaussianActivations.color(params["colors"]).detach().cpu().numpy().tolist(),
         )
 
     @staticmethod
-    def _get_rasterization_groundtruth(
-        datapoints: list[MaskedPosedImageAndDepth], max_depth: float
-    ):
+    def _get_rasterization_groundtruth(datapoints: list[MaskedPosedImageAndDepth], max_depth: float):
         X_CWs = []
         Ks = []
         gts = []
@@ -240,12 +229,8 @@ class PointCloudBodyBuilder:
         valid_depth_pixels = []
         masks = []
         for datapoint in datapoints:
-            assert datapoint.image.shape[1] == width, (
-                "All images must have the same width"
-            )
-            assert datapoint.image.shape[0] == height, (
-                "All images must have the same height"
-            )
+            assert datapoint.image.shape[1] == width, "All images must have the same width"
+            assert datapoint.image.shape[0] == height, "All images must have the same height"
 
             if datapoint.mask is None:
                 continue
@@ -264,9 +249,7 @@ class PointCloudBodyBuilder:
 
             image = torch.from_numpy(datapoint.image).float().cuda() / 255.0
             image[datapoint.mask == 0, :] = 0.0
-            depth = (
-                torch.from_numpy(datapoint.depth).float().cuda() * datapoint.depth_scale
-            )
+            depth = torch.from_numpy(datapoint.depth).float().cuda() * datapoint.depth_scale
             depth[datapoint.mask == 0] = 0.0
             depth_mask = (depth > 0).__and__(depth < max_depth)
             valid_depth_pixels.append(int(depth_mask.sum()))
@@ -317,9 +300,7 @@ class PointCloudBodyBuilder:
         scales = torch.from_numpy(scales).float().cuda()
         scales = GaussianActivations.inv_scale(scales)
 
-        quats = torch.zeros(
-            (num_points, 4), dtype=torch.float32
-        ).cuda()  # (n, 4) w x y z
+        quats = torch.zeros((num_points, 4), dtype=torch.float32).cuda()  # (n, 4) w x y z
         quats[:, 0] = 1.0
 
         means = torch.from_numpy(means_).float().cuda()
@@ -360,9 +341,7 @@ class PointCloudBodyBuilder:
         return np.array(sq_dists), np.array(indices)
 
     @staticmethod
-    def _create_optimizers_for_params(
-        params: torch.nn.ParameterDict, learning_rates: dict[str, float]
-    ) -> dict[str, torch.optim.Optimizer]:
+    def _create_optimizers_for_params(params: torch.nn.ParameterDict, learning_rates: dict[str, float]) -> dict[str, torch.optim.Optimizer]:
         optimizers = {}
         for name, learning_rate in learning_rates.items():
             assert name in params, f"Name {name} not in params"
