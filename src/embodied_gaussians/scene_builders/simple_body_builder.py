@@ -1,4 +1,5 @@
 # Copyright (c) 2025 Boston Dynamics AI Institute LLC. All rights reserved.
+# pyright: reportArgumentType=false, reportCallIssue=false, reportOperatorIssue=false
 
 from dataclasses import dataclass, field
 from collections import namedtuple

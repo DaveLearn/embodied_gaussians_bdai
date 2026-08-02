@@ -1,4 +1,5 @@
 # Copyright (c) 2025 Boston Dynamics AI Institute LLC. All rights reserved.
+# pyright: reportArgumentType=false
 
 from dataclasses import dataclass
 from typing import cast

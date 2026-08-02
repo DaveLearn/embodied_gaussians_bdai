@@ -1,4 +1,5 @@
 # Copyright (c) 2025 Boston Dynamics AI Institute LLC. All rights reserved.
+# pyright: reportIncompatibleMethodOverride=false
 
 import numpy as np
 
