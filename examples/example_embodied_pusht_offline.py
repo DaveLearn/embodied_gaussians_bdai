@@ -33,9 +33,14 @@ class PlaybackControls:
         self.dataset_manager.update_frames(timestep)
 
     def draw(self):
+        if imgui.is_key_pressed(imgui.Key.space):
+            self.playing = not self.playing
+        imgui.set_next_window_dock_id(0, imgui.Cond_.appearing)
+        imgui.set_next_window_pos(imgui.ImVec2(20.0, 20.0), imgui.Cond_.appearing)
         imgui.begin("Playback")
         imgui.text(f"Current timestep: {self.current_timestep:.2f}")
         imgui.text(f"Playing: {self.playing}")
+        imgui.text("Space: Play/Pause")
         _, self.fps = imgui.slider_int("FPS", self.fps, 1, 120)
         if imgui.button("Play"):
             self.playing = True
