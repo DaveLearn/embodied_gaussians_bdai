@@ -11,7 +11,7 @@ from tqdm import tqdm
 import torch
 import warp as wp
 
-from gsplat.rendering import rasterization
+from embodied_gaussians.utils.gsplat import rasterization
 
 from embodied_gaussians.scene_builders.domain import (
     Gaussians,
