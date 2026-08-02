@@ -1,7 +1,6 @@
 # Copyright (c) 2025 Boston Dynamics AI Institute LLC. All rights reserved.
 
 from typing import Literal
-import pysegreduce
 from dataclasses import dataclass
 import torch
 import warp as wp
@@ -205,23 +204,7 @@ class EmbodiedGaussiansSimulator(Simulator):
             ],
         )
 
-        pysegreduce.reduce_vec3f(
-            self.visual_forces.forces.data_ptr(),
-            self.visual_forces._start_inds.data_ptr(),
-            self.visual_forces._end_inds.data_ptr(),
-            len(self.visual_forces._start_inds),
-            self.visual_forces._total_forces.data_ptr(),
-            0,
-        ) # Replace this with segmented reduce when it is implemented in warp
-
-        pysegreduce.reduce_vec3f(
-            self.visual_forces.moments.data_ptr(),
-            self.visual_forces._start_inds.data_ptr(),
-            self.visual_forces._end_inds.data_ptr(),
-            len(self.visual_forces._start_inds),
-            self.visual_forces._total_moments.data_ptr(),
-            0,
-        )
+        self.visual_forces.sum_forces_by_body()
 
         wp.launch(
             kernel=apply_forces_kernel,

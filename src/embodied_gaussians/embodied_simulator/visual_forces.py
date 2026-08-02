@@ -86,30 +86,34 @@ class VisualForces:
         )
 
     def _initialize(self, body_ids: torch.Tensor):
-        # print(body_ids.tolist())
-        if len(body_ids) == 0:
-            return
-        starts = body_ids[1:] - body_ids[:-1] != 0
-        start_inds = torch.nonzero(starts).squeeze() + 1
-        start_inds = start_inds.reshape(-1).tolist()
-        start_inds = [0] + start_inds
-        end_inds = start_inds[1:] + [len(body_ids)]
-        bids = body_ids[start_inds]
-        mask = bids != -1
-        start_inds = torch.tensor(
-            start_inds, device=self.means.device, dtype=torch.int32
+        segment_body_ids, segment_ids = torch.unique_consecutive(
+            body_ids, return_inverse=True
         )
-        end_inds = torch.tensor(end_inds, device=self.means.device, dtype=torch.int32)
+        valid_segments = segment_body_ids != -1
+        self._body_ids = segment_body_ids[valid_segments]
+        self._num_bodies = len(self._body_ids)
 
-        self._start_inds = start_inds[mask]
-        self._end_inds = end_inds[mask]
-        self._body_ids = bids[mask]
-
-        self._num_bodies = len(self._start_inds)
-
+        # index_add_ cannot use -1 as an index. Map non-body Gaussians to a
+        # trailing sink row, which is ignored by apply_forces_kernel.
+        segment_to_output = torch.full(
+            (len(segment_body_ids),),
+            self._num_bodies,
+            device=self.device,
+            dtype=torch.int64,
+        )
+        segment_to_output[valid_segments] = torch.arange(
+            self._num_bodies, device=self.device, dtype=torch.int64
+        )
+        self._reduction_ids = segment_to_output[segment_ids]
         self._total_forces = torch.zeros(
-            (self._num_bodies, 3), device=self.device, dtype=torch.float32
+            (self._num_bodies + 1, 3), device=self.device, dtype=torch.float32
         )
         self._total_moments = torch.zeros(
-            (self._num_bodies, 3), device=self.device, dtype=torch.float32
+            (self._num_bodies + 1, 3), device=self.device, dtype=torch.float32
         )
+
+    def sum_forces_by_body(self):
+        self._total_forces.zero_()
+        self._total_moments.zero_()
+        self._total_forces.index_add_(0, self._reduction_ids, self.forces)
+        self._total_moments.index_add_(0, self._reduction_ids, self.moments)
