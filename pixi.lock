@@ -270,7 +270,6 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/wayland-protocols-1.49-hd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/wheel-0.47.0-pyhd8ed1ab_0.conda
       - pypi: ./
-      - pypi: direct+https://github.com/RobotLocomotion/drake/releases/download/v1.26.0/drake-1.26.0-cp311-cp311-manylinux_2_31_x86_64.whl
       - pypi: git+https://github.com/davelearn/realsense.git?rev=b3cc6bae06bfac0f8719ac95a7511815dac1213d#b3cc6bae06bfac0f8719ac95a7511815dac1213d
       - pypi: git+https://github.com/jc211/marsoom.git?rev=febe61df91a75df10063bfb420e9e68a9a8cd6a9#febe61df91a75df10063bfb420e9e68a9a8cd6a9
       - pypi: git+https://github.com/jc211/ritm_interactive_segmentation#def5ff1ec309389d552f1a036000fc6160dd398f
@@ -336,7 +335,6 @@ environments:
       - pypi: https://files.pythonhosted.org/packages/71/60/917329f640924b18ff085ab889a11c763e0b573da888e8404ff486657602/pyyaml-6.0.3-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl
       - pypi: https://files.pythonhosted.org/packages/7b/91/984aca2ec129e2757d1e4e3c81c3fcda9d0f85b74670a094cc443d9ee949/joblib-1.5.3-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/7d/68/d8d58938dfb1370b266a1a729e6d77a985be23689a0496498ee17b2cbf90/platformdirs-4.11.0-py3-none-any.whl
-      - pypi: https://files.pythonhosted.org/packages/7e/32/a7125fb28c4261a627f999d5fb4afff25b523800faed2c30979949d6facd/pydot-4.0.1-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/7e/85/a5bfaebfd305ac18b57b0854d74e37e586809061a91fda62f0bd50c8518e/narwhals-2.24.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/7f/9c/34f6962f9b9e9c71f6e5ed806e0d0ff03c9d1b0b2340088a0cf4bce09b18/flask-3.1.3-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/80/46/bddc13df6c2a40741e0cc7865bb1c9ed4796b6760bd04ce5fae3928ef917/kiwisolver-1.5.0-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.whl
@@ -4268,18 +4266,8 @@ packages:
   - realsense @ git+https://github.com/davelearn/realsense.git@b3cc6bae06bfac0f8719ac95a7511815dac1213d
   - isegm @ git+https://github.com/jc211/ritm_interactive_segmentation
   - pydantic
-  - drake @ https://github.com/RobotLocomotion/drake/releases/download/v1.26.0/drake-1.26.0-cp311-cp311-manylinux_2_31_x86_64.whl
   - pyrealsense2>=2.54.2,<3
   requires_python: '>=3.11,<3.12'
-- pypi: direct+https://github.com/RobotLocomotion/drake/releases/download/v1.26.0/drake-1.26.0-cp311-cp311-manylinux_2_31_x86_64.whl
-  name: drake
-  version: 1.26.0
-  requires_dist:
-  - matplotlib
-  - numpy
-  - pydot
-  - pyyaml
-  requires_python: '>=3.8'
 - pypi: git+https://github.com/davelearn/realsense.git?rev=b3cc6bae06bfac0f8719ac95a7511815dac1213d#b3cc6bae06bfac0f8719ac95a7511815dac1213d
   name: realsense
   version: 1.0.2
@@ -5197,25 +5185,6 @@ packages:
   version: 4.11.0
   sha256: 360ccded2b7fce0af0ff80cc8f5942a1c5d99b0e856033acb030bfc634709e74
   requires_python: '>=3.10'
-- pypi: https://files.pythonhosted.org/packages/7e/32/a7125fb28c4261a627f999d5fb4afff25b523800faed2c30979949d6facd/pydot-4.0.1-py3-none-any.whl
-  name: pydot
-  version: 4.0.1
-  sha256: 869c0efadd2708c0be1f916eb669f3d664ca684bc57ffb7ecc08e70d5e93fee6
-  requires_dist:
-  - pyparsing>=3.1.0
-  - ruff ; extra == 'lint'
-  - mypy ; extra == 'types'
-  - pydot[lint] ; extra == 'dev'
-  - pydot[types] ; extra == 'dev'
-  - chardet ; extra == 'dev'
-  - parameterized ; extra == 'dev'
-  - pydot[dev] ; extra == 'tests'
-  - tox ; extra == 'tests'
-  - pytest ; extra == 'tests'
-  - pytest-cov ; extra == 'tests'
-  - pytest-xdist[psutil] ; extra == 'tests'
-  - zest-releaser[recommended] ; extra == 'release'
-  requires_python: '>=3.8'
 - pypi: https://files.pythonhosted.org/packages/7e/85/a5bfaebfd305ac18b57b0854d74e37e586809061a91fda62f0bd50c8518e/narwhals-2.24.0-py3-none-any.whl
   name: narwhals
   version: 2.24.0

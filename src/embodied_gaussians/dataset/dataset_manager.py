@@ -6,10 +6,10 @@ from dataclasses import dataclass
 from pathlib import Path
 
 import numpy as np
-from pydrake.trajectories import PiecewisePolynomial
 from typing_extensions import override
 
 from embodied_gaussians import Body, EmbodiedGaussiansEnvironment, FramesBuilder, EmbodiedGaussiansLoader, OfflineCameras
+from embodied_gaussians.utils.timestamps import timestamp_to_index
 
 
 @dataclass
@@ -18,8 +18,6 @@ class RobotData:
     control_timestamps: np.ndarray
     states: list[dict[str, typing.Any]]
     states_timestamps: np.ndarray
-    state_index_look_up: PiecewisePolynomial
-    control_index_look_up: PiecewisePolynomial
 
 @dataclass
 class CameraData:
@@ -123,14 +121,6 @@ class DatasetManager:
                 control_timestamps=ct,
                 states=r["states"],
                 states_timestamps=st,
-                state_index_look_up=PiecewisePolynomial.ZeroOrderHold(
-                    st,
-                    np.arange(0, len(st)).astype(np.float32).reshape(-1, 1).T,
-                ),
-                control_index_look_up=PiecewisePolynomial.ZeroOrderHold(
-                    ct,
-                    np.arange(0, len(ct)).astype(np.float32).reshape(-1, 1).T,
-                ),
             )
         self.try_load_physics()
         if self.load_frames and self.camera_data_found:
@@ -221,14 +211,14 @@ class DatasetManager:
     def panda_state(self, timestamp: float):
         res = {}
         for robot_name, r in self.robots.items():
-            index = int(r.state_index_look_up.value(timestamp))
+            index = timestamp_to_index(r.states_timestamps, timestamp)
             res[robot_name] = r.states[index]
         return res
 
     def controller_state(self, timestamp: float):
         res = {}
         for robot_name, r in self.robots.items():
-            index = int(r.control_index_look_up.value(timestamp))
+            index = timestamp_to_index(r.control_timestamps, timestamp)
             res[robot_name] = r.control[index]
         return res
 

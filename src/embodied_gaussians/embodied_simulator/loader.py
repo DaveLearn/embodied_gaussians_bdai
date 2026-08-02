@@ -12,6 +12,7 @@ from embodied_gaussians.embodied_simulator.simulator import (
     EmbodiedGaussianState,
     update_gaussian_transforms,
 )
+from embodied_gaussians.utils.timestamps import timestamp_to_index
 
 
 class EmbodiedGaussiansLoader(Loader):
@@ -46,8 +47,7 @@ class EmbodiedGaussiansLoader(Loader):
     def get_embodied_gaussian_state_at_timestamp(
         self, timestamp: float, device: str = "cuda"
     ):
-        assert self.index_look_up
-        index = int(self.index_look_up.value(timestamp))
+        index = timestamp_to_index(self.timestamps, timestamp)
         return self.get_embodied_gaussian_state_at_index(index, device)
 
     def load_gaussians_from_builder(self, device: str = "cuda"):

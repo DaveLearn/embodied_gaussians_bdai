@@ -6,8 +6,8 @@ from pathlib import Path
 import numpy as np
 import warp.sim
 import zarr
-from pydrake.trajectories import PiecewisePolynomial
 from embodied_gaussians.utils.physics_utils import load_builder
+from embodied_gaussians.utils.timestamps import timestamp_to_index
 
 
 
@@ -22,7 +22,6 @@ class Loader:
         self._root = None
         self.simulator = None
         self.builder = None
-        self.index_look_up = None
         self._loaded = False
 
     def timestamp_at_index(self, index: int):
@@ -43,11 +42,6 @@ class Loader:
 
         self.timestamps = root["timestamps"][:]
         self.num_steps = len(self.timestamps)
-        self.index_look_up = PiecewisePolynomial.ZeroOrderHold(
-            self.timestamps,
-            np.arange(0, self.num_steps).astype(np.float32).reshape(-1, 1).T,
-        )
-
         if p > 0:
             self.state_particle_q = root["state_particle_q"]
             self.state_particle_qd = root["state_particle_qd"]
@@ -66,7 +60,7 @@ class Loader:
         return root
 
     def get_state_at_timestampe(self, timestamp: float, device: str = "cuda"):
-        index = int(self.index_look_up.value(timestamp))
+        index = timestamp_to_index(self.timestamps, timestamp)
         return self.get_state_at_index(index, device)
 
     def get_state_at_index(self, index: int, device: str = "cuda"):
